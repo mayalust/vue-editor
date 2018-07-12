@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html
+    lang="en">
+<head>
+  <meta
+      charset="UTF-8">
+  <title>
+    Title</title>
+  <script src="node_modules/vue/dist/vue.js"></script>
+  <link rel="stylesheet" href="dist/css/index.css"/>
+  <link rel="stylesheet" href="./dist/css/bootstrap.css"/>
+  <script src="dist/veditor.js"></script>
+</head>
+<body draggable = "false">
+  <div id="app"></div>
+  <script>
+    Vue.use(Veditor);
+    new Vue({
+      template : "\
+      <div class=\"row\">\
+        <div class=\"col-xs-2\">\
+          <free-board-control options=\"tools\"></free-board-control>\
+        </div>\
+        <div class=\"col-xs-10\">\
+          <free-board options=\"options\"></free-board>\
+          <!-- <free-board-prev options=\"options\"></free-board-prev> -->\
+        </div>\
+      </div>",
+      data : function(){
+        return {
+          tools : [{
+            type : "row",
+            children : [{
+              type : "col",
+              class: "col-xs-3",
+              children : []
+            },{
+              type : "col",
+              class: "col-xs-9",
+              children : []
+            }]
+          },{
+            id : "e 55",
+            type : "text",
+            value : "4567"
+          }],
+          options : [{
+            id : "root",
+            type : "row",
+            children : [1,2].map(function(e, i){
+              return {
+                id : e + "_" + 0,
+                type : "col",
+                class: "col-xs-6",
+                children : [{
+                  id : e + "_" + 1,
+                  type: "row",
+                  children: [{
+                    id : e + "_" + 2,
+                    type: "col",
+                    class: "col-xs-3",
+                    children: [{
+                      id : e + "_" + 3,
+                      type: "text",
+                      value: 100
+                    }]
+                  },{
+                    id : e + "_" + 4,
+                    type: "col",
+                    class: "col-xs-9",
+                    children: [{
+                      id : e + "_" + 5,
+                      type: "text",
+                      value: "abcde"
+                    },{
+                      id : e + "_" + 6,
+                      type: "text",
+                      value: "abcde"
+                    }]
+                  }]
+                }]
+              }
+            })
+          }]
+        }
+      }
+    }).$mount("#app");
+  </script>
+</body>
+</html>

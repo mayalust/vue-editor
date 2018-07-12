@@ -1,0 +1,30 @@
+{
+  "name": "vue-editor",
+  "version": "1.0.0",
+  "description": "vue-editor",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mayalust/vue-editor.git"
+  },
+  "keywords": [
+    "vue",
+    "editor"
+  ],
+  "author": "proudsmart",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mayalust/vue-editor/issues"
+  },
+  "bin": {
+    "veditor": "./bootstrap.js"
+  },
+  "homepage": "https://github.com/mayalust/vue-editor#readme",
+  "dependencies": {
+    "bootstrap": "^4.1.1",
+    "vue": "^2.5.16"
+  }
+}
