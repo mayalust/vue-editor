@@ -18,10 +18,13 @@
     new Vue({
       template : "\
       <div class=\"row\">\
-        <div class=\"col-xs-2\">\
+        <div class=\"toppart\">\
+          EXAMPLE\
+        </div>\
+        <div class=\"leftpart\">\
           <free-board-control options=\"tools\"></free-board-control>\
         </div>\
-        <div class=\"col-xs-10\">\
+        <div class=\"rightpart\">\
           <free-board options=\"options\"></free-board>\
           <!-- <free-board-prev options=\"options\"></free-board-prev> -->\
         </div>\
@@ -29,20 +32,12 @@
       data : function(){
         return {
           tools : [{
-            type : "row",
-            children : [{
-              type : "col",
-              class: "col-xs-3",
-              children : []
-            },{
-              type : "col",
-              class: "col-xs-9",
-              children : []
-            }]
-          },{
-            id : "e 55",
-            type : "text",
-            value : "4567"
+            title : "普通文字",
+            data : {
+              id : "e 55",
+              type : "text",
+              value : "4567"
+            }
           }],
           options : [{
             id : "root",
