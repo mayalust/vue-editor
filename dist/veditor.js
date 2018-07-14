@@ -18,6 +18,10 @@
     isObject = isType("Object"),
     vueEditor = {}, events = {}, DragAndDrop,
     OFFSETY = 10, OFFSETX = 10,
+    Dictionary = {
+      value : "取值",
+      theme : "样式"
+    }
     valExp = ["([0-9]+|[0-9]*.[0-9]+)", "(true)", "(false)", "^\"(.*)\"$"];
   function nextTick(fn){
     setTimeout(fn, 100);
@@ -118,6 +122,11 @@
     } else {
       parent.appendChild(newItem);
     }
+  }
+  function addStyle(elem, style){
+    eachProp(style, function(n, i){
+      elem.style[i] = n;
+    })
   }
   function addClass(elem, cls){
     var oldcls = elem.getAttribute("class"),
@@ -329,8 +338,200 @@
       }
     }
   }
+  function getValue(str){
+    var exps = [/^\"(.*)\"$/g], match;
+    while(match = exps.shift()){
+      match = match.exec(str);
+      if(match){
+        return match[1];
+      }
+    }
+  }
+  function getOffset(target){
+    var parent = target, style,
+      left = parent.offsetLeft, top = parent.offsetTop;
+    while((parent = parent.parentNode) !== document){
+      style = window.getComputedStyle(parent, null);
+      if(style.position !== "static"){
+        left += parent.offsetLeft;
+        top += parent.offsetTop;
+      }
+    }
+    return {
+      left : left,
+      top : top
+    }
+  }
+  var items = {
+    "input" : function(prop){
+      var input = createElement("input");
+      addClass(input, "input");
+      input.value = prop.value;
+      return {
+        dom : input,
+        destroy : function() {
+          input.remove();
+          input = null;
+        },
+        getValue : function(){
+          return input.value
+        }
+      };
+    },
+    "select" : function(prop){
+      var select = createElement("select"),
+        option = createElement("option"),dp, offset;
+      addClass(select, "select");
+      option.innerText = prop.value;
+      select.appendChild(option);
+      select.onmousedown = function(e){
+        e.preventDefault();
+        offset = getOffset(e.currentTarget);
+        dp = createDrop(prop.options, {
+          top : offset.top + e.currentTarget.clientHeight,
+          left : offset.left,
+          width : e.currentTarget.clientWidth
+        });
+        dp.on("select", function(e){
+          option.innerText = e[1];
+        });
+      }
+      return {
+        dom : select,
+        destroy : function() {
+          select.remove();
+          option = null;
+          select = null;
+        },
+        getValue : function(){
+          return input.value
+        }
+      };
+    }
+  }
+  function createDrop(options, config){
+    var events = {},
+      buttonWrap = createElement("div", null, "button-wrap", null),
+      widget = createElement("div", null, "widget-bg", null),
+      fragment = createDocumentFragment();
+    fragment.appendChild(widget);
+    widget.appendChild(buttonWrap);
+    addStyle(buttonWrap, {
+      width : config.width + "px"
+    });
+    each(options, function(option, i){
+      var node = createElement("div", null, "button-item", null);
+      node.innerText = option[1];
+      node.onclick = function(e){
+        events["select"](option);
+        destroy();
+      };
+      buttonWrap.append(node);
+    })
+    document.body.appendChild(fragment);
+    setStyle(buttonWrap, {
+      top : config.top + "px",
+      left : config.left + "px"
+    });
+    setTimeout(function(){
+      addClass(widget, "fade-in");
+      addClass(buttonWrap, "fade-in");
+    })
+    widget.onclick = function(e){
+      if(e.eventPhase === 2){
+        destroy();
+      }
+    }
+    function destroy(){
+      widget.remove();
+      widget = null;
+      buttonWrap = null;
+    };
+    return {
+      on : function(eventname, callback){
+        events[eventname] = callback;
+      },
+      destroy : destroy
+    }
+  }
+  function createItem(prop){
+    return items[prop.type](prop);
+  }
+  function createProperties(title, properties){
+    var events = {},
+      values = [],
+      fragement = createDocumentFragment(),
+      cover = createElement("div", null, "modal-cover", null),
+      modal = createElement("div", null, "fb-modal", null),
+      table = createElement("div", null, "prop-table", null),
+      titledom = createElement("div", null, "title", null),
+      submit = createElement("button", null, "submit", null),
+      tools = [];
+    titledom.innerText = title;
+    modal.appendChild(titledom);
+    cover.appendChild(modal);
+    fragement.appendChild(cover);
+    modal.appendChild(table);
+    modal.appendChild(submit);
+    submit.innerText = "提交";
+    setTimeout(function(){
+      addClass(cover, "fade-in");
+    })
+    setTimeout(function(){
+      addClass(modal, "fade-in");
+    });
+    function getValue(tool){
+      var type = tool[0];
+      return tool[1].getValue();
+    }
+    submit.onclick = function(e){
+      var rs = {};
+      each(properties, function(n, i){
+        rs[n.name] = getValue(values[i])
+      })
+      events["submit"] && events["submit"](rs);
+    }
+    cover.onclick = function(e){
+      if(e.eventPhase === 2){
+        events["close"] && events["close"](e);
+      }
+    }
+    each(properties, function(property){
+      var tr = createElement("div"),
+        title = createElement("div"),
+        content = createElement("div"),
+        tool;
+      tool = createItem(property);
+      tools.push(tool);
+      tool.value = property.value;
+      content.appendChild(tool.dom);
+      title.innerText = Dictionary[property.name] || property.title || property.name;
+      addClass(tr, "tr");
+      addClass(title, "td-title");
+      addClass(content, "td-content");
+      values.push(["input", tool]);
+      tr.appendChild(title);
+      tr.appendChild(content);
+      table.appendChild(tr);
+    })
+    document.body.appendChild(fragement);
+    return {
+      on : function(eventname, callback){
+        events[eventname] = callback;
+      },
+      destroy : function(){
+        each(tools, function(t){
+          t.destroy();
+        })
+        cover.remove();
+        titledom = null;
+        cover = null;
+        modal = null;
+        submit = null;
+      }
+    }
+  }
   var storage = SessionStorageFactory();
-  /** DragAndDrop */
   var freeboardcontainer = {
     inserted : function(el, b, o, n){
       var vm = o.context;
@@ -356,6 +557,9 @@
           });
           parent = target.parentNode.parentNode;
           addClass(parent, "hide");
+          setTimeout(function(){
+            addClass(helper, "fade-in");
+          })
           body.onmouseover = mouseover
           body.onmouseout = mouseout;
           body.onmouseup = mouseup;
@@ -378,6 +582,7 @@
             })(e.target);
           helper.remove();
           removeClass(parent, "hide");
+          removeClass(helper, "fade-in");
           if(target){
             removeClass(target, "hover");
             toValue = prop(target, "_blank");
@@ -439,6 +644,9 @@
             top : (e.pageY - OFFSETY) + "px",
             left : (e.pageX - OFFSETX) + "px"
           });
+          setTimeout(function(){
+            addClass(helper, "fade-in");
+          })
           attachEvent(body, "mousemove", function(e){
             e.preventDefault();
             setStyle(helper, {
@@ -471,6 +679,7 @@
               pushChildNode(appendValue, cl);
             }
           }
+          removeClass(helper, "fade-in");
           helper.remove();
           body.onmouseover = null
           body.onmouseout = null;
@@ -505,7 +714,24 @@
       var buttonWrap, widget, target, buttons = [{
         name : "编辑",
         onclick : function(e){
-          var val = prop(el.parentNode, "_header");
+          var val = prop(el.parentNode, "_header"),
+            map = vueEditor.toolsMap[val['type']],
+            props = val.props,
+            propDefines = map.propDefines.map(function(n){
+              var rs = plainClone(n);
+              rs.value = props[rs.name];
+              return rs;
+            }),
+            modal = createProperties("编辑属性", propDefines);
+          modal.on("submit", function(e){
+            eachProp(e, function(n, i){
+              props[i] = n;
+            })
+            modal.destroy();
+          });
+          modal.on("close", function(e){
+            modal.destroy();
+          })
         }
       },{
         name : "剪切",
@@ -550,7 +776,7 @@
         buttonWrap = createElement("div", null, "button-wrap", null),
           widget = createElement("div", null, "widget-bg", null),
           fragment = createDocumentFragment();
-          target = e.target;
+        target = e.target;
         fragment.appendChild(widget);
         widget.appendChild(buttonWrap);
         each(buttons, function(btn, i){
@@ -640,7 +866,6 @@
       el["_" + arg] = b.value;
     }
   }
-  /** vue set up **/
   var htmlRecursive = {
     name : "html-recursive",
     template : "<component v-bind:is=\"ctype\" v-bind:option=\"option\"></component>",
@@ -800,13 +1025,10 @@
       },
       tool : {
         template : "<div>\
-            <component v-bind:is=\"'fb-' + option.type\" v-bind:value=\"option.id\"></component>\
+            <component v-bind:is=\"'fb-' + option.type\" \
+             v-bind:option=\"option\"\
+            ></component>\
           </div>",
-        data : function(){
-          return {
-            cls : ""
-          }
-        },
         directives : {
           setvalue : setvalue
         },
@@ -828,12 +1050,13 @@
   var freeboard = {
     name : "free-board",
     template : "\
-      <div class=\"row item\" v-freeboardcontainer>\
+      <div class=\"row whole\" v-freeboardcontainer>\
         <html-recursive \
           v-for=\"op in root.children\"\
           v-bind:option=\"op\"\>\
         </html-recursive>\
         <div class=\"blank\"\
+          v-bind:class=\"end\"\
           v-setvalue:append=\"root\">\
         </div>\
       </div>",
@@ -845,13 +1068,23 @@
       setvalue : setvalue
     },
     computed : {
+      end : function(){
+        var vm = this;
+        var _END = "end whole"
+        var root = vm.root;
+        if(!root.children) return _END;
+        if(root.children.length == 0) return _END;
+        return "";
+      },
       root : function(){
         var attr = this.attr("options"),
           options = this.parent().data(attr),
           root = {
             children : options
           };
-        recursive(root);
+        recursive(root, function(n){
+          console.log(n.type);
+        });
         return root;
       }
     }
@@ -1069,16 +1302,67 @@
       if(str)
         return this[str];
     }
+    Vue.prototype.getAttribute = function(name){
+      var option = this.getComponent(),
+        attr = getValue(option.props[name]);
+      return attr;
+    }
+    Vue.prototype.getComponent = function(){
+      var parent = this;
+      do{
+        if(parent.freeboardComponent){
+          return parent.$parent.option;
+        }
+      } while (parent = parent.$parent);
+      return null;
+    }
     Vue.component("free-board", freeboard);
     Vue.component("free-board-prev", freeboardpreview);
     Vue.component("free-board-control", freeboardcontrol);
     Vue.component("html-recursive", htmlRecursive);
     Vue.component("html-recursive-prev", htmlRecursivePreview);
-    Vue.component("fb-text", {
-      template : "<span>{{value}}</span>",
-      name : "fb-text",
-      props : ['value']
+    each(vueEditor.tools, function(n){
+      Vue.component(n.component.name, {
+        template : "<comp></comp>",
+        data : function(){
+          return {
+            freeboardComponent : n
+          };
+        },
+        components : {
+          "comp" : n.component
+        }
+      });
     })
+  }
+  vueEditor.register = function(name, config){
+    var props = (function(props){
+      var rs = {};
+      each(props, function(p){
+        if(isObject(p)){
+          rs[p.name] = p["default"];
+        } else if (isArray(p)){
+          rs[p[1]] = p[2];
+        } else if (isString(p)){
+          rs[p] = null;
+        }
+      })
+      return rs;
+    })(config.props), tool = {
+      title : config.name,
+      data : {
+        type : name,
+        props : props
+      },
+      propDefines : config.props,
+      component : config.component
+    };
+    config.component.name = "fb-" + name;
+    config.component.props = config.props;
+    vueEditor.toolsMap = vueEditor.toolsMap || {};
+    vueEditor.tools = vueEditor.tools || [];
+    vueEditor.toolsMap[name] = tool;
+    vueEditor.tools.push(tool);
   }
   return vueEditor;
 });

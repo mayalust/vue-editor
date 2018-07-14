@@ -14,12 +14,45 @@
 <body draggable = "false">
   <div id="app"></div>
   <script>
+    /** 注册一个名为TEXT的自定义组件到设计器 */
+    Veditor.register("text", {
+      name : "文字",
+      props : [{
+        "type" : "input",
+        "name" : 'url',
+        "default" : "\"输入文字\""
+      },{
+        "type" : "input",
+        "name" : 'value',
+        "default" : "\"输入文字\""
+      },{
+        "type" : "select",
+        "name" : 'theme',
+        "default" : "normal",
+        "options" : [
+          ["normal", "普通"],
+          ["center", "居中"]
+        ]
+      }],
+      component : {
+        template : "<span v-bind:class='theme'>{{value}}</span>",
+        computed : {
+          value : function(){
+            return this.getAttribute("value");
+          },
+          theme : function(){
+            return this.getAttribute("theme");
+          }
+        }
+      }
+    });
+
+    /** 使用中间件Veditor */
     Vue.use(Veditor);
     new Vue({
-      template : "\
-      <div class=\"row\">\
+      template : "<div class=\"row\">\
         <div class=\"toppart\">\
-          EXAMPLE\
+          视图设计器\
         </div>\
         <div class=\"leftpart\">\
           <free-board-control options=\"tools\"></free-board-control>\
@@ -31,52 +64,8 @@
       </div>",
       data : function(){
         return {
-          tools : [{
-            title : "普通文字",
-            data : {
-              id : "e 55",
-              type : "text",
-              value : "4567"
-            }
-          }],
-          options : [{
-            id : "root",
-            type : "row",
-            children : [1,2].map(function(e, i){
-              return {
-                id : e + "_" + 0,
-                type : "col",
-                class: "col-xs-6",
-                children : [{
-                  id : e + "_" + 1,
-                  type: "row",
-                  children: [{
-                    id : e + "_" + 2,
-                    type: "col",
-                    class: "col-xs-3",
-                    children: [{
-                      id : e + "_" + 3,
-                      type: "text",
-                      value: 100
-                    }]
-                  },{
-                    id : e + "_" + 4,
-                    type: "col",
-                    class: "col-xs-9",
-                    children: [{
-                      id : e + "_" + 5,
-                      type: "text",
-                      value: "abcde"
-                    },{
-                      id : e + "_" + 6,
-                      type: "text",
-                      value: "abcde"
-                    }]
-                  }]
-                }]
-              }
-            })
-          }]
+          tools : Veditor.tools,
+          options : []
         }
       }
     }).$mount("#app");
