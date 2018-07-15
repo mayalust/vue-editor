@@ -392,7 +392,6 @@
             commandStack.push(cmd);
             emit("command:add", cmd);
             commandInx++;
-            console.log(commandInx)
           }
         }
       },
@@ -410,7 +409,6 @@
           });
           commandInx--;
           emit("command:back", cmd);
-          console.log(commandInx)
         }
       },
       forward : function(){
@@ -427,11 +425,9 @@
           })
           commandInx++
           emit("command:forward", cmd);
-          console.log(commandInx)
         }
       },
       getCommandInx : function(){
-        console.log(commandInx);
         return commandInx;
       },
       getAllCommand : function(){
