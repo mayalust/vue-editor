@@ -12,6 +12,7 @@
 })(this, function(){
   var tostring = Object.prototype.toString,
     slice = Array.prototype.slice,
+    shift = Array.prototype.shift,
     isFunction = isType("Function"),
     isArray = isType("Array"),
     isString = isType("String"),
@@ -390,9 +391,10 @@
           end : function(){
             commandStack.push(cmd);
             emit("command:add", cmd);
+            commandInx++;
+            console.log(commandInx)
           }
         }
-        commandInx++;
       },
       backward : function(){
         var back = commandStack.pop(), cmd, params, fn;
@@ -408,8 +410,8 @@
           });
           commandInx--;
           emit("command:back", cmd);
+          console.log(commandInx)
         }
-
       },
       forward : function(){
         var forward = trashStack.shift(), cmd, params, fn;
@@ -423,9 +425,14 @@
             params = isArray(params) ? params : [params]
             fn.apply(null, params);
           })
-          commandInx--
+          commandInx++
           emit("command:forward", cmd);
+          console.log(commandInx)
         }
+      },
+      getCommandInx : function(){
+        console.log(commandInx);
+        return commandInx;
       },
       getAllCommand : function(){
         return [commandStack, trashStack, commandInx === commandId];
@@ -509,6 +516,7 @@
     var events = {},
       buttonWrap = createElement("div", null, "button-wrap", null),
       widget = createElement("div", null, "widget-bg", null),
+      nodelists = [],
       fragment = createDocumentFragment();
     fragment.appendChild(widget);
     widget.appendChild(buttonWrap);
@@ -518,10 +526,13 @@
     each(options, function(option, i){
       var node = createElement("div", null, "button-item", null);
       node.innerText = option[1];
+      config.index == i && addClass(node, "highlight");
       node.onclick = function(e){
-        events["select"](option);
+        emit("select", option, i);
+        sethighlight(i);
         destroy();
       };
+      nodelists.push(node);
       buttonWrap.append(node);
     })
     document.body.appendChild(fragment);
@@ -538,8 +549,21 @@
         destroy();
       }
     }
+    function emit(){
+      var args = slice.call(arguments),
+        eventname = args.shift();
+      events[eventname] && events[eventname].apply(null, args);
+    }
+    function sethighlight(inx){
+      each(nodelists, function(n, i){
+        i == inx ? addClass(n, "highlight") : removeClass(n, "highlight")
+      })
+    }
     function destroy(){
       widget.remove();
+      each(nodelists, function(n, i){
+        delete nodelists[i];
+      })
       widget = null;
       buttonWrap = null;
     };
@@ -547,6 +571,7 @@
       on : function(eventname, callback){
         events[eventname] = callback;
       },
+      sethighlight : sethighlight,
       destroy : destroy
     }
   }
@@ -1233,9 +1258,6 @@
           root = {
             children : options
           };
-        recursive(root, function(n){
-          console.log(n.type);
-        });
         return root;
       }
     }
@@ -1503,10 +1525,23 @@
       historys = commands[0].concat(commands[1]).map(function(n, i){
         return [i, n.msg];
       }), offsetLeft = 200;
-    createDrop(historys, {
+    var dp = createDrop(historys, {
+      index : commands[0].length - 1,
       top : offset.top + e.currentTarget.clientHeight,
       left : offset.left - offsetLeft,
       width : offsetLeft + 50
+    });
+    dp.on("select", function(e, i){
+      function execCommand(){
+        if(cmd.getCommandInx() < i){
+          cmd.forward();
+          execCommand();
+        } else if(cmd.getCommandInx() > i){
+          cmd.backward();
+          execCommand()
+        }
+      }
+      execCommand();
     })
   }
   vueEditor.on = on;
