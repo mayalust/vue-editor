@@ -16,12 +16,13 @@
     isArray = isType("Array"),
     isString = isType("String"),
     isObject = isType("Object"),
-    vueEditor = {}, events = {}, DragAndDrop,
+    vueEditor = {}, events = {},
     OFFSETY = 10, OFFSETX = 10,
+    commandId = null;
     Dictionary = {
       value : "取值",
       theme : "样式"
-    }
+    },
     valExp = ["([0-9]+|[0-9]*.[0-9]+)", "(true)", "(false)", "^\"(.*)\"$"];
   function nextTick(fn){
     setTimeout(fn, 100);
@@ -321,6 +322,11 @@
     parentlist.splice(inx, 0, child);
     recursive(parent || parentlist);
   }
+  function getNextNode(node){
+    parentlist = node.parentlist;
+    inx = parentlist.indexOf(node);
+    return parentlist[inx + 1] || null;
+  }
   function afterChildNode(node, child){
     var parent = child.parent = node.parent,
       parentlist = child.parentlist = node.parentlist;
@@ -362,11 +368,88 @@
       top : top
     }
   }
+  function command(){
+    var commandStack = [], trashStack = [], events = {}, commandInx = -1;
+    function emit(eventname, data){
+      events[eventname] && events[eventname](data);
+    }
+    return {
+      on : function(eventname, callback){
+        events[eventname] = callback;
+      },
+      init : function(){
+        commandId = commandInx
+      },
+      addCommand : function(cmd){
+        trashStack = [];
+        cmd.process = [];
+        return {
+          process : function(prog){
+            cmd.process.push(prog)
+          },
+          end : function(){
+            commandStack.push(cmd);
+            emit("command:add", cmd);
+          }
+        }
+        commandInx++;
+      },
+      backward : function(){
+        var back = commandStack.pop(), cmd, params, fn;
+        if(back){
+          trashStack.unshift(back),
+            process = back.process;
+          each(process, function(p){
+            cmd = p.backward;
+            fn = cmd[0];
+            params = cmd[1];
+            params = isArray(params) ? params : [params]
+            fn.apply(null, params);
+          });
+          commandInx--;
+          emit("command:back", cmd);
+        }
+
+      },
+      forward : function(){
+        var forward = trashStack.shift(), cmd, params, fn;
+        if(forward){
+          commandStack.push(forward);
+          process = forward.process;
+          each(process, function(p){
+            cmd = p.forward;
+            fn = cmd[0];
+            params = cmd[1];
+            params = isArray(params) ? params : [params]
+            fn.apply(null, params);
+          })
+          commandInx--
+          emit("command:forward", cmd);
+        }
+      },
+      getAllCommand : function(){
+        return [commandStack, trashStack, commandInx === commandId];
+      }
+    }
+  }
+  var cmd = command();
+  cmd.on("command:add", function(event){
+    emit("command:change", cmd.getAllCommand());
+  })
+  cmd.on("command:back", function(event){
+    emit("command:change", cmd.getAllCommand());
+  })
+  cmd.on("command:forward", function(event){
+    emit("command:change", cmd.getAllCommand());
+  })
   var items = {
     "input" : function(prop){
-      var input = createElement("input");
+      var input = createElement("input"), dirty, old;
       addClass(input, "input");
-      input.value = prop.value;
+      old = input.value = prop.value;
+      input.onchange = function(){
+        dirty = this.value !== old;
+      }
       return {
         dom : input,
         destroy : function() {
@@ -375,14 +458,22 @@
         },
         getValue : function(){
           return input.value
+        },
+        isDirty : function(){
+          return dirty;
         }
       };
     },
     "select" : function(prop){
       var select = createElement("select"),
-        option = createElement("option"),dp, offset;
+        map = {}, value = prop.value,
+        option = createElement("option"),dp, offset, dirty, old;
+      each(prop.options, function(n, i){
+        map[n[0]] = n[1];
+      })
       addClass(select, "select");
-      option.innerText = prop.value;
+      old = prop.value;
+      option.innerText = map[prop.value];
       select.appendChild(option);
       select.onmousedown = function(e){
         e.preventDefault();
@@ -394,6 +485,8 @@
         });
         dp.on("select", function(e){
           option.innerText = e[1];
+          value = e[0];
+          dirty = value !== old;
         });
       }
       return {
@@ -404,7 +497,10 @@
           select = null;
         },
         getValue : function(){
-          return input.value
+          return value
+        },
+        isDirty : function(){
+          return dirty;
         }
       };
     }
@@ -489,7 +585,9 @@
       each(properties, function(n, i){
         rs[n.name] = getValue(values[i])
       })
-      events["submit"] && events["submit"](rs);
+      tools.some(function(t){return t.isDirty()}) ?
+        events["submit"] && events["submit"](rs) :
+        events["close"] && events["close"](e)
     }
     cover.onclick = function(e){
       if(e.eventPhase === 2){
@@ -548,6 +646,10 @@
           appendValue,
           parent,
           parentNode,
+          command = cmd.addCommand({
+            name : "append tool",
+            msg : "增加了一个那啥",
+          }),
           fromValue = prop(target, "_header");
         if(fromValue){
           body.appendChild(helper);
@@ -574,7 +676,7 @@
         }
         function mouseup(e){
           console.error("body mouseup");
-          var inx, cl,
+          var inx, cl, next,
             target = (function(t){
               return findParent(t, function(n){
                 return hasClass(n, "blank");
@@ -590,14 +692,35 @@
             cl = plainClone(fromValue);
             if(toValue){
               insertChildNode(toValue, cl);
+              command.process({
+                forward : [insertChildNode, [toValue, cl]],
+                backward : [removeChildNode, cl]
+              })
             } else if(appendValue){
               pushChildNode(appendValue, cl);
+              command.process({
+                forward : [pushChildNode, [appendValue, cl]],
+                backward : [removeChildNode, cl]
+              })
+            }
+            next = getNextNode(fromValue);
+            if(next){
+              command.process({
+                forward : [removeChildNode, fromValue],
+                backward : [insertChildNode, [next, cl]]
+              })
+            } else {
+              command.process({
+                forward : [removeChildNode, fromValue],
+                backward : [pushChildNode, [fromValue.parent, fromValue]]
+              })
             }
             removeChildNode(fromValue);
             emit("freeboard:change");
           } else {
             insertBefore(origin, parent);
           }
+          command.end();
           body.onmouseover = null
           body.onmouseout = null;
           body.onmouseup = null;
@@ -635,9 +758,14 @@
       function mousedown(e){
         var target = e.target,
           fromValue = prop(target, "_header"),
+          map = vueEditor.toolsMap[fromValue['type']],
           toValue,
           parent,
-          parentNode;
+          parentNode,
+          command = cmd.addCommand({
+            name : "append tool",
+            msg : "增加了一个[" + map.title + "]组件",
+          });
         if(fromValue){
           body.appendChild(helper);
           setStyle(helper, {
@@ -675,9 +803,18 @@
             cl = plainClone(fromValue);
             if(toValue){
               insertChildNode(toValue, cl);
+              command.process({
+                forward : [insertChildNode, [toValue, cl]],
+                backward : [removeChildNode, cl]
+              })
             } else if(appendValue){
               pushChildNode(appendValue, cl);
+              command.process({
+                forward : [pushChildNode, [appendValue, cl]],
+                backward : [removeChildNode, cl]
+              })
             }
+            command.end();
           }
           removeClass(helper, "fade-in");
           helper.remove();
@@ -709,14 +846,24 @@
       }
     }
   }
+  function updateNode(target, obj){
+    eachProp(obj, function(n, i){
+      target[i] = n;
+    });
+  }
   var widget = {
     inserted : function(el, b){
-      var buttonWrap, widget, target, buttons = [{
+      var buttonWrap, widget, target,
+        buttons = [{
         name : "编辑",
         onclick : function(e){
           var val = prop(el.parentNode, "_header"),
             map = vueEditor.toolsMap[val['type']],
             props = val.props,
+            command = cmd.addCommand({
+              name : "edit tool",
+              msg : "编辑了[" + map.title + "]组件的属性信息",
+            }),
             propDefines = map.propDefines.map(function(n){
               var rs = plainClone(n);
               rs.value = props[rs.name];
@@ -724,9 +871,13 @@
             }),
             modal = createProperties("编辑属性", propDefines);
           modal.on("submit", function(e){
-            eachProp(e, function(n, i){
-              props[i] = n;
+            var old = plainClone(props);
+            command.process({
+              forward : [updateNode, [props, e]],
+              backward : [updateNode, [props, old]]
             })
+            updateNode(props, e);
+            command.end();
             modal.destroy();
           });
           modal.on("close", function(e){
@@ -1322,20 +1473,44 @@
     Vue.component("html-recursive", htmlRecursive);
     Vue.component("html-recursive-prev", htmlRecursivePreview);
     each(vueEditor.tools, function(n){
-      Vue.component(n.component.name, {
-        template : "<comp></comp>",
-        data : function(){
-          return {
-            freeboardComponent : n
-          };
-        },
-        components : {
-          "comp" : n.component
-        }
-      });
+      if(n.component){
+        Vue.component(n.component.name, {
+          template : "<comp></comp>",
+          data : function(){
+            return {
+              freeboardComponent : n
+            };
+          },
+          components : {
+            "comp" : n.component
+          }
+        });
+      }
     })
   }
-  vueEditor.register = function(name, config){
+  vueEditor.save = function(){
+    cmd.init();
+  }
+  vueEditor.back = function(button, e){
+    cmd.backward();
+  }
+  vueEditor.forward = function(button, e){
+    cmd.forward();
+  }
+  vueEditor.history = function(button, e){
+    var commands = cmd.getAllCommand(),
+      offset = getOffset(e.currentTarget)
+      historys = commands[0].concat(commands[1]).map(function(n, i){
+        return [i, n.msg];
+      }), offsetLeft = 200;
+    createDrop(historys, {
+      top : offset.top + e.currentTarget.clientHeight,
+      left : offset.left - offsetLeft,
+      width : offsetLeft + 50
+    })
+  }
+  vueEditor.on = on;
+  vueEditor.register = function(name, config, toTools){
     var props = (function(props){
       var rs = {};
       each(props, function(p){
@@ -1357,12 +1532,26 @@
       propDefines : config.props,
       component : config.component
     };
-    config.component.name = "fb-" + name;
-    config.component.props = config.props;
+    config.component && (config.component.name = "fb-" + name);
+    config.component && (config.component.props = config.props);
     vueEditor.toolsMap = vueEditor.toolsMap || {};
-    vueEditor.tools = vueEditor.tools || [];
     vueEditor.toolsMap[name] = tool;
-    vueEditor.tools.push(tool);
+    if(toTools !== false){
+      vueEditor.tools = vueEditor.tools || [];
+      vueEditor.tools.push(tool);
+    }
   }
+  vueEditor.register("row", {
+    name : "栅格",
+    props : [{
+      "type" : "select",
+      "name" : 'theme',
+      "default" : "normal",
+      "options" : [
+        ["normal", "普通"],
+        ["center", "居中"]
+      ]
+    }]
+  }, false);
   return vueEditor;
 });

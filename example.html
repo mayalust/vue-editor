@@ -19,10 +19,6 @@
       name : "文字",
       props : [{
         "type" : "input",
-        "name" : 'url',
-        "default" : "\"输入文字\""
-      },{
-        "type" : "input",
         "name" : 'value',
         "default" : "\"输入文字\""
       },{
@@ -47,12 +43,36 @@
       }
     });
 
-    /** 使用中间件Veditor */
+    /** 使用中间件引用Veditor */
     Vue.use(Veditor);
+    var command = {
+      data : function(button, e){
+        console.log(data);
+      },
+      back : function(button, e){
+        Veditor.back(button, e);
+      },
+      forward : function(button, e){
+        Veditor.forward(button, e);
+      },
+      history : function(button, e){
+        Veditor.history(button, e);
+      },
+      save : function(button, e){
+        Veditor.save(button, e);
+      }
+    }
+    var buttons = [["data", "数据", false], ["back", "撤销", true], ["forward", "前进", true], ["history", "历史", true], ["save", "保存", false]];
+    buttons = buttons.reverse();
     new Vue({
       template : "<div class=\"row\">\
         <div class=\"toppart\">\
           视图设计器\
+          <button class=\"top-btn\" \
+            v-btndisabled='button[2]'\
+            v-for=\"button in buttons\" \
+            v-bind:class=\"disabled(button)\"\
+            v-on:click=\"click(button, $event)\">{{button[1]}}</button>\
         </div>\
         <div class=\"leftpart\">\
           <free-board-control options=\"tools\"></free-board-control>\
@@ -62,8 +82,44 @@
           <!-- <free-board-prev options=\"options\"></free-board-prev> -->\
         </div>\
       </div>",
+      methods : {
+        disabled : function(button){
+          return button[2] ? "disabled" : "";
+        },
+        click : function(button, e){
+          command[button[0]](button, e)
+        }
+      },
+      directives : {
+        btndisabled : {
+          inserted : function(el, b, o, n){
+            var value = b.value;
+            el.disabled = value;
+          },
+          update : function(el, b, o, n){
+            var value = b.value;
+            el.disabled = value;
+          }
+        }
+      },
       data : function(){
+        var cur = this;
+        Veditor.on("command:change", function(commands){
+          cur.buttons = cur.buttons.map(function(n, i){
+            if(n[0] == "back"){
+              n[2] = !commands[0].length
+            } else if(n[0] == "forward"){
+              n[2] = !commands[1].length
+            } else if(n[0] == "history"){
+              n[2] = !commands[1].length && !commands[0].length
+            } else if(n[0] == "save"){
+              n[2] = commands[2];
+            }
+            return n;
+          })
+        })
         return {
+          buttons : buttons,
           tools : Veditor.tools,
           options : []
         }
