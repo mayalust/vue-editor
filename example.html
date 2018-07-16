@@ -7,6 +7,7 @@
   <title>
     Title</title>
   <script src="node_modules/vue/dist/vue.js"></script>
+  <link rel="stylesheet" href="dist/css/components.css"/>
   <link rel="stylesheet" href="dist/css/index.css"/>
   <link rel="stylesheet" href="./dist/css/bootstrap.css"/>
   <script src="dist/veditor.js"></script>
@@ -17,7 +18,7 @@
     /** 注册一个名为TEXT的自定义组件到设计器 */
     Veditor.register("text", {
       name : "文字",
-      props : [{
+      properties : [{
         "type" : "input",
         "name" : 'value',
         "default" : "\"输入文字\""
@@ -27,17 +28,19 @@
         "default" : "normal",
         "options" : [
           ["normal", "普通"],
-          ["center", "居中"]
+          ["big", "加大"],
+          ["red", "红色"],
+          ["gray", "灰背景"],
         ]
       }],
       component : {
-        template : "<span v-bind:class='theme'>{{value}}</span>",
+        template : "<p v-bind:class = \"theme\">{{value}}</p>",
         computed : {
           value : function(){
             return this.getAttribute("value");
           },
           theme : function(){
-            return this.getAttribute("theme");
+            return "fb-" + this.getAttribute("theme");
           }
         }
       }

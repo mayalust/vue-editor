@@ -651,6 +651,10 @@
     }
   }
   var storage = SessionStorageFactory();
+  function getNextBlank(dom){
+    var next = dom.nextSibling;
+    return next && hasClass(next, "blank") ? next : null;
+  }
   var freeboardcontainer = {
     inserted : function(el, b, o, n){
       var vm = o.context;
@@ -667,12 +671,15 @@
           appendValue,
           parent,
           parentNode,
-          command = cmd.addCommand({
-            name : "append tool",
-            msg : "增加了一个那啥",
-          }),
+          command,
           fromValue = prop(target, "_header");
         if(fromValue){
+          map = vueEditor.toolsMap[fromValue['type']];
+          inx = fromValue.parentlist.indexOf(fromValue) + 1;
+          command = cmd.addCommand({
+            name : "append tool",
+            msg : "移动了一个[" + map.title + "]",
+          })
           body.appendChild(helper);
           setStyle(helper, {
             top : (e.pageY - OFFSETY) + "px",
@@ -696,7 +703,6 @@
           emit("freeboard:change");
         }
         function mouseup(e){
-          console.error("body mouseup");
           var inx, cl, next,
             target = (function(t){
               return findParent(t, function(n){
@@ -707,8 +713,9 @@
           removeClass(parent, "hide");
           removeClass(helper, "fade-in");
           if(target){
-            removeClass(target, "hover");
+            next = getNextNode(fromValue)
             toValue = prop(target, "_blank");
+            removeClass(target, "hover");
             appendValue = prop(target, "_append");
             cl = plainClone(fromValue);
             if(toValue){
@@ -724,7 +731,6 @@
                 backward : [removeChildNode, cl]
               })
             }
-            next = getNextNode(fromValue);
             if(next){
               command.process({
                 forward : [removeChildNode, fromValue],
@@ -736,12 +742,17 @@
                 backward : [pushChildNode, [fromValue.parent, fromValue]]
               })
             }
+            /** if no value changed, history would not be recorded*/
+            if(toValue){
+              next !== toValue ? command.end() : null;
+            } else {
+              fromValue.parentlist !== appendValue.children ? command.end() : null;
+            }
             removeChildNode(fromValue);
             emit("freeboard:change");
           } else {
             insertBefore(origin, parent);
           }
-          command.end();
           body.onmouseover = null
           body.onmouseout = null;
           body.onmouseup = null;
@@ -777,17 +788,14 @@
         helper = createElement("div", null, "helper", null);
       el.onmousedown = mousedown;
       function mousedown(e){
-        var target = e.target,
-          fromValue = prop(target, "_header"),
-          map = vueEditor.toolsMap[fromValue['type']],
-          toValue,
-          parent,
-          parentNode,
+        var target = e.target, map, toValue, parent, parentNode, command,
+          fromValue = prop(target, "_header");
+        if(fromValue){
+          map = vueEditor.toolsMap[fromValue['type']];
           command = cmd.addCommand({
             name : "append tool",
             msg : "增加了一个[" + map.title + "]组件",
           });
-        if(fromValue){
           body.appendChild(helper);
           setStyle(helper, {
             top : (e.pageY - OFFSETY) + "px",
@@ -880,7 +888,7 @@
         onclick : function(e){
           var val = prop(el.parentNode, "_header"),
             map = vueEditor.toolsMap[val['type']],
-            props = val.props,
+            props = val.properties,
             command = cmd.addCommand({
               name : "edit tool",
               msg : "编辑了[" + map.title + "]组件的属性信息",
@@ -935,8 +943,19 @@
       },{
         name : "删除",
         onclick : function(e){
-          var val = prop(el.parentNode, "_header");
-          removeChildNode(val);
+          var fromValue = prop(el.parentNode, "_header"),
+            next = getNextNode(fromValue);
+          if(next){
+            command.process({
+              forward : [removeChildNode, fromValue],
+              backward : [insertChildNode, [next, cl]]
+            })
+          } else {
+            command.process({
+              forward : [removeChildNode, fromValue],
+              backward : [pushChildNode, [fromValue.parent, fromValue]]
+            })
+          }
         }
       }];
       function remove(){
@@ -1044,7 +1063,7 @@
     components : {
       fbrow : {
         template : "\
-          <div class = \"row\">\
+          <div class = \"row item\">\
             <div class=\"blank\" v-setvalue:blank=\"option\"></div>\
             <div class=\"col-xs-12 drdp\"\
               v-bind:class=\"cls\">\
@@ -1105,7 +1124,7 @@
         props : ['option']
       },
       tool : {
-        template : "<div>\
+        template : "<div class=\"wrap\">\
           <div class=\"blank\" v-setvalue:blank=\"option\"></div>\
             <div class=\"drdp\"\
               v-bind:class=\"cls\">\
@@ -1222,7 +1241,7 @@
   var freeboard = {
     name : "free-board",
     template : "\
-      <div class=\"row whole\" v-freeboardcontainer>\
+      <div class=\"row freeboard\" v-freeboardcontainer>\
         <html-recursive \
           v-for=\"op in root.children\"\
           v-bind:option=\"op\"\>\
@@ -1440,16 +1459,16 @@
       }
     },
     data : function(){
+      var row = extend({}, vueEditor.toolsMap["row"].data);
       return {
-        colData : {
-          type : "row",
+        colData : extend(row, {
           children : [{
             type : "col",
             colnum : 12,
             class: "col-xs-12",
             children : []
           }]
-        }
+        })
       }
     },
     computed : {
@@ -1473,7 +1492,16 @@
     }
     Vue.prototype.getAttribute = function(name){
       var option = this.getComponent(),
-        attr = getValue(option.props[name]);
+        map = vueEditor.toolsMap[option['type']],
+        propDefines = map ? map.propDefines : [],
+        findDef = propDefines.find(function(n){
+          return n.name == name;
+        }),
+        attr = option.properties[name],
+        attr = findDef ?
+          (findDef.type === "input"
+            ? getValue(attr) : attr) :
+          attr;
       return attr;
     }
     Vue.prototype.getComponent = function(){
@@ -1542,7 +1570,7 @@
   }
   vueEditor.on = on;
   vueEditor.register = function(name, config, toTools){
-    var props = (function(props){
+    var properties = (function(props){
       var rs = {};
       each(props, function(p){
         if(isObject(p)){
@@ -1554,17 +1582,16 @@
         }
       })
       return rs;
-    })(config.props), tool = {
+    })(config.properties), tool = {
       title : config.name,
       data : {
         type : name,
-        props : props
+        properties : properties
       },
-      propDefines : config.props,
+      propDefines : config.properties,
       component : config.component
     };
     config.component && (config.component.name = "fb-" + name);
-    config.component && (config.component.props = config.props);
     vueEditor.toolsMap = vueEditor.toolsMap || {};
     vueEditor.toolsMap[name] = tool;
     if(toTools !== false){
@@ -1574,7 +1601,7 @@
   }
   vueEditor.register("row", {
     name : "栅格",
-    props : [{
+    properties : [{
       "type" : "select",
       "name" : 'theme',
       "default" : "normal",
