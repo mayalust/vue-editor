@@ -891,7 +891,7 @@
             props = val.properties,
             command = cmd.addCommand({
               name : "edit tool",
-              msg : "编辑了[" + map.title + "]组件的属性信息",
+              msg : "编辑了[" + map.title + "]组件的属性",
             }),
             propDefines = map.propDefines.map(function(n){
               var rs = plainClone(n);
@@ -916,9 +916,28 @@
       },{
         name : "剪切",
         onclick : function(e){
-          var val = prop(el.parentNode, "_header");
-          storage.set("freeboardcopy", plainClone(val));
-          removeChildNode(val);
+          var fromValue = prop(el.parentNode, "_header"),
+            map = vueEditor.toolsMap[fromValue['type']],
+            command = cmd.addCommand({
+              name : "remove tool",
+              msg : "剪切[" + map.title + "]组件"
+            }),
+            next = getNextNode(fromValue);
+          if(next){
+            removeChildNode(fromValue);
+            command.process({
+              forward : [removeChildNode, fromValue],
+              backward : [insertChildNode, [next, fromValue]]
+            })
+          } else {
+            removeChildNode(fromValue);
+            command.process({
+              forward : [removeChildNode, fromValue],
+              backward : [pushChildNode, [fromValue.parent, fromValue]]
+            })
+          }
+          storage.set("freeboardcopy", plainClone(fromValue));
+          command.end();
         }
       },{
         name : "复制",
@@ -929,33 +948,69 @@
       },{
         name : "前插粘贴",
         onclick : function(e){
-          var val = prop(el.parentNode, "_header"),
-            fromValue = storage.get("freeboardcopy");
-          insertChildNode(val, fromValue);
+          var target = e.currentTarget,
+            fromValue = storage.get("freeboardcopy"),
+            map = vueEditor.toolsMap[fromValue['type']],
+            command = cmd.addCommand({
+              name : "remove tool",
+              msg : "粘贴(向前)[" + map.title + "]组件"
+            }),
+            toValue = prop(el.parentNode, "_header"),
+            cl = plainClone(fromValue);
+          if(toValue){
+            insertChildNode(toValue, cl);
+            command.process({
+              forward : [insertChildNode, [toValue, cl]],
+              backward : [removeChildNode, cl]
+            })
+          }
+          command.end();
         }
       },{
         name : "后插粘贴",
         onclick : function(e){
-          var val = prop(el.parentNode, "_header"),
-            fromValue = storage.get("freeboardcopy");
-          afterChildNode(val, fromValue);
+          var target = e.currentTarget,
+            fromValue = storage.get("freeboardcopy"),
+            map = vueEditor.toolsMap[fromValue['type']],
+            command = cmd.addCommand({
+              name : "remove tool",
+              msg : "粘贴(向后)[" + map.title + "]组件"
+            }),
+            toValue = prop(el.parentNode, "_header"),
+            cl = plainClone(fromValue);
+          if(toValue){
+            afterChildNode(toValue, cl);
+            command.process({
+              forward : [afterChildNode, [toValue, cl]],
+              backward : [removeChildNode, cl]
+            })
+          }
+          command.end();
         }
       },{
         name : "删除",
         onclick : function(e){
           var fromValue = prop(el.parentNode, "_header"),
+            map = vueEditor.toolsMap[fromValue['type']],
+            command = cmd.addCommand({
+              name : "remove tool",
+              msg : "删除[" + map.title + "]组件"
+            }),
             next = getNextNode(fromValue);
           if(next){
+            removeChildNode(fromValue);
             command.process({
               forward : [removeChildNode, fromValue],
-              backward : [insertChildNode, [next, cl]]
+              backward : [insertChildNode, [next, fromValue]]
             })
           } else {
+            removeChildNode(fromValue);
             command.process({
               forward : [removeChildNode, fromValue],
               backward : [pushChildNode, [fromValue.parent, fromValue]]
             })
           }
+          command.end();
         }
       }];
       function remove(){
@@ -1001,9 +1056,21 @@
       var buttonWrap, widget, target, buttons = [{
         name : "粘贴",
         onclick : function(e){
-          var appendValue = prop(el, "_append"),
-            fromValue = storage.get("freeboardcopy")
-          pushChildNode(appendValue, fromValue);
+          var target = e.currentTarget,
+            fromValue = storage.get("freeboardcopy"),
+            map = vueEditor.toolsMap[fromValue['type']],
+            command = cmd.addCommand({
+              name : "remove tool",
+              msg : "粘贴[" + map.title + "]组件"
+            }),
+            appendValue = prop(el, "_append"),
+            cl = plainClone(fromValue);
+          pushChildNode(appendValue, cl);
+          command.process({
+            forward : [pushChildNode, [appendValue, cl]],
+            backward : [removeChildNode, cl]
+          })
+          command.end();
         }
       }];
       var value = b.value;
