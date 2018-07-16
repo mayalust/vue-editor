@@ -346,11 +346,11 @@
     }
   }
   function getValue(str){
-    var exps = [/^\"(.*)\"$/g], match;
+    var exps = [/^(\".*\")$/g, /^(\d+)$/g, /^(\[.*\])$/g, /^(\{.*\})$/g], match;
     while(match = exps.shift()){
       match = match.exec(str);
       if(match){
-        return match[1];
+        return eval(match[1]);
       }
     }
   }
@@ -655,6 +655,8 @@
     var next = dom.nextSibling;
     return next && hasClass(next, "blank") ? next : null;
   }
+
+  /** 重要 */
   var freeboardcontainer = {
     inserted : function(el, b, o, n){
       var vm = o.context;
@@ -1634,6 +1636,9 @@
       }
       execCommand();
     })
+  }
+  vueEditor.use = function(tool){
+    tool.install(Veditor);
   }
   vueEditor.on = on;
   vueEditor.register = function(name, config, toTools){

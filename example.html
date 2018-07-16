@@ -10,43 +10,17 @@
   <link rel="stylesheet" href="dist/css/components.css"/>
   <link rel="stylesheet" href="dist/css/index.css"/>
   <link rel="stylesheet" href="./dist/css/bootstrap.css"/>
+  <script src="node_modules/echarts/dist/echarts.js"></script>
   <script src="dist/veditor.js"></script>
+  <script src="dist/components.js"></script>
 </head>
 <body draggable = "false">
   <div id="app"></div>
   <script>
     /** 注册一个名为TEXT的自定义组件到设计器 */
-    Veditor.register("text", {
-      name : "文字",
-      properties : [{
-        "type" : "input",
-        "name" : 'value',
-        "default" : "\"输入文字\""
-      },{
-        "type" : "select",
-        "name" : 'theme',
-        "default" : "normal",
-        "options" : [
-          ["normal", "普通"],
-          ["big", "加大"],
-          ["red", "红色"],
-          ["gray", "灰背景"],
-        ]
-      }],
-      component : {
-        template : "<p v-bind:class = \"theme\">{{value}}</p>",
-        computed : {
-          value : function(){
-            return this.getAttribute("value");
-          },
-          theme : function(){
-            return "fb-" + this.getAttribute("theme");
-          }
-        }
-      }
-    });
-
     /** 使用中间件引用Veditor */
+    Veditor.use(Components);
+    /** 这两行顺序不能错 */
     Vue.use(Veditor);
     var command = {
       data : function(button, e){
@@ -64,8 +38,7 @@
       save : function(button, e){
         Veditor.save(button, e);
       }
-    }
-    var buttons = [["data", "数据", false], ["back", "撤销", true], ["forward", "前进", true], ["history", "历史", true], ["save", "保存", false]];
+    }, buttons = [["data", "数据", false], ["back", "撤销", true], ["forward", "前进", true], ["history", "历史", true], ["save", "保存", false]];
     buttons = buttons.reverse();
     new Vue({
       template : "<div class=\"row\">\
