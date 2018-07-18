@@ -1,6 +1,6 @@
 {
   "name": "proudsmart-vue-editor",
-  "version": "1.0.30",
+  "version": "1.0.31",
   "description": "vue-editor",
   "main": "dist/veditor.js",
   "scripts": {
@@ -20,12 +20,16 @@
     "url": "https://github.com/mayalust/vue-editor/issues"
   },
   "bin": {
-    "veditor": "./dist/veditor.js"
+    "veditor": "./dist/server.js"
   },
   "homepage": "https://github.com/mayalust/vue-editor#readme",
   "dependencies": {
+    "body-parser": "^1.18.3",
     "bootstrap": "^4.1.1",
     "echarts": "^4.1.0",
+    "ejs": "^2.6.1",
+    "express": "^4.16.3",
+    "proudsmart-tree": "^1.0.38",
     "vue": "^2.5.16"
   }
 }

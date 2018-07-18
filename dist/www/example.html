@@ -6,13 +6,14 @@
       charset="UTF-8">
   <title>
     Title</title>
-  <script src="node_modules/vue/dist/vue.js"></script>
-  <link rel="stylesheet" href="dist/css/components.css"/>
-  <link rel="stylesheet" href="dist/css/index.css"/>
-  <link rel="stylesheet" href="./dist/css/bootstrap.css"/>
-  <script src="node_modules/echarts/dist/echarts.js"></script>
-  <script src="dist/veditor.js"></script>
-  <script src="dist/components.js"></script>
+  <script src="../../node_modules/vue/dist/vue.js"></script>
+  <link rel="stylesheet" href="css/components.css"/>
+  <link rel="stylesheet" href="css/index.css"/>
+  <link rel="stylesheet" href="css/bootstrap.css"/>
+  <script src="../../node_modules/echarts/dist/echarts.js"></script>
+  <script src="../../node_modules/echarts/theme/macarons.js"></script>
+  <script src="veditor.js"></script>
+  <script src="components.js"></script>
 </head>
 <body draggable = "false">
   <div id="app"></div>
@@ -24,7 +25,7 @@
     Vue.use(Veditor);
     var command = {
       data : function(button, e){
-        console.log(data);
+        console.log(this.options);
       },
       back : function(button, e){
         Veditor.back(button, e);
@@ -37,6 +38,7 @@
       },
       save : function(button, e){
         Veditor.save(button, e);
+        //console.log(this.options);
       }
     }, buttons = [["data", "数据", false], ["back", "撤销", true], ["forward", "前进", true], ["history", "历史", true], ["save", "保存", false]];
     buttons = buttons.reverse();
@@ -63,7 +65,7 @@
           return button[2] ? "disabled" : "";
         },
         click : function(button, e){
-          command[button[0]](button, e)
+          command[button[0]].call(this, button, e)
         }
       },
       directives : {

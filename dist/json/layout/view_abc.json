@@ -1,0 +1,68 @@
+[
+  {
+    "type": "row",
+    "properties": {
+      "theme": "normal"
+    },
+    "children": [
+      {
+        "type": "col",
+        "class": "col-xs-6",
+        "colnum": 6,
+        "children": [
+          {
+            "type": "text",
+            "properties": {
+              "value": "\"输入文字\"",
+              "theme": "red"
+            }
+          },
+          {
+            "type": "linechart",
+            "properties": {
+              "title": "\"折线图\"",
+              "category": "[\"第一条\",\"第二条\",\"第三条\",\"第四条\",\"第五条\",\"第六条\"]",
+              "value": "[[7,2],[3,4],[5,2],[3,1],[1,6],[2,7]]",
+              "height": "500",
+              "theme": "default"
+            }
+          },
+          {
+            "type": "linechart",
+            "properties": {
+              "title": "\"折线图\"",
+              "category": "[\"第一条\",\"第二条\",\"第三条\",\"第四条\",\"第五条\",\"第六条\"]",
+              "value": "[[1,2],[3,4],[5,2],[3,1],[1,6],[2,20]]",
+              "height": "300",
+              "theme": "dark"
+            }
+          }
+        ]
+      },
+      {
+        "type": "col",
+        "class": "col-xs-6",
+        "colnum": 6,
+        "children": [
+          {
+            "type": "linechart",
+            "properties": {
+              "title": "\"折线图\"",
+              "category": "[\"第一条\",\"第二条\",\"第三条\",\"第四条\",\"第五条\",\"第六条\"]",
+              "value": "[[1,2],[3,4],[5,2],[3,1],[1,6],[2,7]]",
+              "height": "300",
+              "theme": "macarons"
+            }
+          },
+          {
+            "type": "text",
+            "properties": {
+              "value": "\"输入文字\"",
+              "theme": "normal"
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

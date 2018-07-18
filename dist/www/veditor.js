@@ -19,11 +19,18 @@
     isObject = isType("Object"),
     vueEditor = {}, events = {},
     OFFSETY = 10, OFFSETX = 10,
-    commandId = null;
+    _options = null,
+    _filetree = null,
+    commandId = null,
     Dictionary = {
       value : "取值",
       theme : "样式"
     },
+    MenuDictionary = {
+      echarts : "图表",
+      layout : "布局",
+      table : "表格"
+    }
     valExp = ["([0-9]+|[0-9]*.[0-9]+)", "(true)", "(false)", "^\"(.*)\"$"];
   function nextTick(fn){
     setTimeout(fn, 100);
@@ -267,6 +274,80 @@
       }
     }
   }
+  function replaceAllQuate(str){
+    /** remove all " with /" */
+    for(var i = 0; i < str.length; i){
+      if(str[i] === "\""){
+        str = str.substring(0, i) + "\\" + str.substring(i);
+        i += 2;
+      } else {
+        i++;
+      }
+    }
+    return str;
+  }
+  function toHTML(treenodes){
+    var html = "<template>\n";
+    function createBlanks(n){
+      var rs = "";
+      for(var i = 0; i < n; i++){
+        rs += "  "
+      }
+      return rs;
+    };
+    function getTag(n, depth){
+      var rs = "", map = vueEditor.toolsMap[n['type']],
+        propDefines = map ? map.propDefines : [],
+        switchRule = {
+          "input" : function(p){
+            return replaceAllQuate(p)
+          },
+          "select" : function(p){
+            return "\\\"" + p + "\\\""
+          }
+        };
+      if(n.type === "row") {
+        rs = createBlanks(depth) + "<div class=\"row\"";
+      } else if(n.type === "col"){
+        rs = createBlanks(depth) + "<div class=\"" + n.class +"\" ";
+      } else {
+        rs = createBlanks(depth) + "<fb-" + n.type;
+      }
+      function switchValue(p, i){
+        var findDef = propDefines.find(function(n){
+          return n.name === i;
+        }) || {},
+          rule = switchRule[findDef.type];
+        return isFunction(rule) ? rule(p) : null
+      }
+      eachProp(n.properties, function(p, i){
+        rs += "\n" + createBlanks(depth + 1) + i + "=\"" + switchValue(p, i) +
+          ((i < n.properties.length - 1) ? "\"\n" : "\"");
+      })
+      rs += ">\n";
+      return rs;
+    }
+    function getTagTail(n, depth){
+      if(n.type === "row") {
+        return createBlanks(depth) + "</div>\n";
+      } else if(n.type === "col"){
+        return createBlanks(depth) + "</div>\n";
+      } else {
+        return createBlanks(depth) + "</fb-" + n.type + ">\n";
+      }
+    }
+    traverse(treenodes, 0)
+    html += "</template>\n";
+    function traverse(treenodes, depth){
+      depth++;
+      each(treenodes, function(n){
+        html += getTag(n, depth);
+        traverse(n.children, depth);
+        html += getTagTail(n, depth);
+      })
+    }
+    return html;
+  }
   function plainClone(obj){
     var queue = [], result, exclude = ["parent", "parentlist"];
     result = traverse(obj);
@@ -303,6 +384,7 @@
         queue.push(n);
       });
     }
+    return tree;
   }
   function removeChildNode(node){
     var parentlist = node.parentlist;
@@ -1310,7 +1392,7 @@
   var freeboard = {
     name : "free-board",
     template : "\
-      <div class=\"row freeboard\" v-freeboardcontainer>\
+      <div class=\"row freeboard edit\" v-freeboardcontainer>\
         <html-recursive \
           v-for=\"op in root.children\"\
           v-bind:option=\"op\"\>\
@@ -1339,9 +1421,10 @@
       root : function(){
         var attr = this.attr("options"),
           options = this.parent().data(attr),
-          root = {
+          root = recursive({
             children : options
-          };
+          });
+        _options = options;
         return root;
       }
     }
@@ -1349,7 +1432,7 @@
   var freeboardpreview = {
     name : "free-board-prev",
     template : "\
-      <div class=\"freeboard\">\
+      <div class=\"freeboard preview\">\
         <html-recursive-prev\
           v-for=\"op in options\"\
           v-bind:option=\"op\"\>\
@@ -1359,7 +1442,6 @@
       options : function(){
         var attr = this.attr("options"),
           options = this.parent().data(attr);
-        //recursive(options, function(n){});
         return options;
       }
     }
@@ -1498,25 +1580,110 @@
       }
     }
   }
+  function postJSON(url, param, callback){
+    var xhr = new XMLHttpRequest();
+    param = JSON.stringify(param);
+    xhr.onreadystatechange = state_Change;
+    xhr.withCredentials = true;
+    xhr.open("POST",url,true);
+    xhr.setRequestHeader("Content-Type", "text/plain");
+    xhr.send(param);
+    function state_Change(){
+      if(xhr.readyState == 4){
+        if(xhr.status == 200){
+          var json = JSON.parse(xhr.responseText);
+          callback(json);
+        }
+      };
+    }
+  }
+  var filetree = {
+    update : function(e, b, o, n){
+      var data = b.value,
+        ins = psTree(e, {
+          showline : true,
+          animate : false,
+          data : data,
+          themes : "show-line",
+          on : {
+            init : function(event){
+              var cur = this,
+                url = urlparse(),
+                viewId = url.param.id,
+                match = new RegExp("^view_(.*)\\.json$", "g").exec(this.basename),
+                group = this.createGroup("group");
+              this.type !== "directory" ? this.icon = "circle" : null;
+              this.label = this.title || MenuDictionary[this.basename] || this.basename;
+              if ( this.basename == "view_" + viewId + ".json"){
+                nextTick(function(){
+                  cur.highlight();
+                });
+              }
+              if(this.type !== "directory"){
+                var dragBtn = this.createButton("b", "拖拽", {
+                  float : "right"
+                }, function(e){
+
+                });
+                dragBtn["_header"] = this.data;
+                var editBtn = this.createButton("c", "编辑", {
+                  float : "right"
+                }, function(e){
+                  window.open("edit?id=" + match[1]);
+                });
+                dragBtn.setAttribute("class", "drag");
+                group.appendChild(dragBtn);
+                this.type == "file" && group.appendChild(editBtn);
+                this.type == "file" && setTimeout(function(){
+                  cur.text.style.color = "blue";
+                  cur.text.style.textDecoration = "underline";
+                });
+                this.render(group);
+              } else {
+                if(this.path === "layout"){
+                  var addBtn = this.createButton("d", "新建", {
+                    float : "right"
+                  }, function(e){
+                    window.open("edit");
+                  });
+                  group.appendChild(addBtn);
+                  this.render(group);
+                }
+              }
+            },
+            click : function(event){
+              var match = new RegExp("^view_(.*)\\.json$", "g").exec(this.basename);
+              event.preventDefault();
+              if(this.type == "file"){
+                window.open("preview?id=" + match[1]);
+              }
+            }
+          }
+        });
+    }
+  }
   var freeboardcontrol = {
     name : "free-board-control",
     template : "\
       <div class=\"free-board-control\" v-tools >\
         <column-editor v-setvalue=\"colData\" :colData=\"colData\">\
         </column-editor>\
-          <div class=\"comp-tool\"\
-            v-for=\"op in options\"\
-            >\
+        <div v-filetree:options=\"options\"></div>\
+        <!--\
+        <div class=\"comp-tool\"\
+          v-for=\"op in options\"\
+          >\
           <span>{{op.title}}</span>\
           <div v-setvalue:header=\"op.data\" class='drag'>拖拽</div>\
-        </div>\
+        </div>-->\
       </div>",
     components : {
       "column-editor" : columnEditor
     },
     directives : {
       'tools' : tools,
-      'setvalue' : setvalue
+      'setvalue' : setvalue,
+      'filetree' : filetree
     },
     data : function(){
       var arr = [];
@@ -1527,8 +1694,15 @@
         split : arr
       }
     },
+    computed : {
+      options : function(){
+        var attr = this.attr("options"),
+          options = this.parent().data(attr);
+        return options;
+      }
+    },
     data : function(){
-      var row = extend({}, vueEditor.toolsMap["row"].data);
+      var cur = this, row = extend({}, vueEditor.toolsMap["row"].data);
       return {
         colData : extend(row, {
           children : [{
@@ -1539,16 +1713,10 @@
           }]
         })
       }
-    },
-    computed : {
-      options : function(){
-        var attr = this.attr("options"),
-          options = this.parent().data(attr);
-        return options;
-      }
     }
   }
   vueEditor.install = function(Vue){
+    Vue.prototype.postJSON = postJSON;
     Vue.prototype.parent = function(){
       return this.$parent
     }
@@ -1605,6 +1773,13 @@
   }
   vueEditor.save = function(){
     cmd.init();
+    var params = JSON.stringify(plainClone(_options), null, 2);
+    //console.log(toHTML(_options));
+    postJSON("api/savelayout/abc", params, function(event){
+      if(event.code == 0){
+        console.log("event");
+      }
+    });
   }
   vueEditor.back = function(button, e){
     cmd.backward();
@@ -1656,6 +1831,7 @@
       return rs;
     })(config.properties), tool = {
       title : config.name,
+      type : "predefined",
       data : {
         type : name,
         properties : properties

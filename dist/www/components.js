@@ -11,6 +11,42 @@
   }
 })(this, function(){
   var components = {};
+  var echartDir = {
+    echart : {
+      inserted : function(e, b, o, n){
+        var option = b.value;
+        function resize(){
+          e.echart.resize();
+        }
+        e.resizeEvent = resize;
+        setTimeout(function(){
+          e.theme = option.theme;
+          e.echart = echarts.init(e, option.theme);
+          e.echart.setOption(option);
+        });
+        window.addEventListener("resize", resize);
+      },
+      update : function(e, b, o, n){
+        var option = b.value;
+        if(e.theme != option.theme){
+          e.theme = option.theme;
+          e.echart.dispose();
+          e.echart = echarts.init(e, option.theme);
+          e.echart.setOption(option);
+        } else {
+          e.echart.setOption(option);
+        }
+      },
+      unbind : function(e){
+        e.echart.dispose();
+        window.removeEventListener("resize", e.resizeEvent)
+      }
+    },
+    height : function(e, b, o, n){
+      e.style.height = b.value + "px";
+      e.echart && e.echart.resize();
+    }
+  }
   components.install = function(Veditor){
     Veditor.register("text", {
       name : "文字",
@@ -63,31 +99,22 @@
         "type" : "input",
         "name" : 'height',
         "default" : "300"
+      },{
+        "type" : "select",
+        "name" : 'theme',
+        "default" : "default",
+        "options" : [
+          ["default", "默认"],
+          ["macarons", "蓝色"],
+          ["dark", "黑色"],
+          ["light", "亮色"]
+        ]
       }],
       component : {
-        template : "<div v-echart:option=\"option\" v-height:height=\"height\"></div>",
-        directives : {
-          echart : {
-            inserted : function(e, b, o, n){
-              var option = b.value;
-              setTimeout(function(){
-                e.echart = echarts.init(e);
-                e.echart.setOption(option);
-              });
-            },
-            update : function(e, b, o, n){
-              var option = b.value;
-              e.echart.setOption(option);
-            },
-            unbind : function(e){
-              e.echart.dispose();
-            }
-          },
-          height : function(e, b, o, n){
-            e.style.height = b.value + "px";
-            e.echart && e.echart.resize();
-          }
-        },
+        template : "<div \
+            v-echart:option=\"option\"\
+            v-height:height=\"height\"></div>",
+        directives : echartDir,
         computed : {
           height : function(){
             var height = this.getAttribute("height");
@@ -96,6 +123,7 @@
           option : function(){
             var cat = this.getAttribute("category");
             var title = this.getAttribute("title");
+            var theme = this.getAttribute("theme");
             var series = this.getAttribute("value").reduce(function(a, b){
               b = typeof b === "number" ? [b] : b;
               for(var i = 0; i< b.length; i++){
@@ -108,6 +136,7 @@
               return a;
             },[]);
             var option = {
+              theme : theme,
               title : {
                 text : title,
                 left : "center"
@@ -122,9 +151,6 @@
               series: series
             }
             return option;
-          },
-          theme : function(){
-            return "fb-" + this.getAttribute("theme");
           }
         }
       }
@@ -146,41 +172,32 @@
         "type" : "input",
         "name" : 'height',
         "default" : "300"
+      },{
+        "type" : "select",
+        "name" : 'theme',
+        "default" : "default",
+        "options" : [
+          ["default", "默认"],
+          ["macarons", "蓝色"],
+          ["dark", "黑色"],
+          ["light", "亮色"]
+        ]
       }],
       component : {
         template : "<div v-echart:option=\"option\" v-height:height=\"height\"></div>",
-        directives : {
-          echart : {
-            inserted : function(e, b, o, n){
-              var option = b.value;
-              setTimeout(function(){
-                e.echart = echarts.init(e);
-                e.echart.setOption(option);
-              });
-            },
-            update : function(e, b, o, n){
-              var option = b.value;
-              e.echart.setOption(option);
-            },
-            unbind : function(e){
-              e.echart.dispose();
-            }
-          },
-          height : function(e, b, o, n){
-            e.style.height = b.value + "px";
-            e.echart && e.echart.resize();
-          }
-        },
+        directives : echartDir,
         computed : {
           height : function(){
             var height = this.getAttribute("height");
             return height;
           },
           option : function(){
+            var theme = this.getAttribute("theme");
             var cat = this.getAttribute("category");
             var title = this.getAttribute("title");
             var values = this.getAttribute("value");
             var option = {
+              theme : theme,
               title : {
                 text : title,
                 left : "center"
@@ -226,31 +243,20 @@
         "type" : "input",
         "name" : 'height',
         "default" : "300"
+      },{
+        "type" : "select",
+        "name" : 'theme',
+        "default" : "default",
+        "options" : [
+          ["default", "默认"],
+          ["macarons", "蓝色"],
+          ["dark", "黑色"],
+          ["light", "亮色"]
+        ]
       }],
       component : {
         template : "<div v-echart:option=\"option\" v-height:height=\"height\"></div>",
-        directives : {
-          echart : {
-            inserted : function(e, b, o, n){
-              var option = b.value;
-              setTimeout(function(){
-                e.echart = echarts.init(e);
-                e.echart.setOption(option);
-              });
-            },
-            update : function(e, b, o, n){
-              var option = b.value;
-              e.echart.setOption(option);
-            },
-            unbind : function(e){
-              e.echart.dispose();
-            }
-          },
-          height : function(e, b, o, n){
-            e.style.height = b.value + "px";
-            e.echart && e.echart.resize();
-          }
-        },
+        directives : echartDir,
         computed : {
           height : function(){
             var height = this.getAttribute("height");
@@ -259,6 +265,7 @@
           option : function(){
             var cat = this.getAttribute("category");
             var title = this.getAttribute("title");
+            var theme = this.getAttribute("theme");
             var series = this.getAttribute("value").reduce(function(a, b){
               b = typeof b === "number" ? [b] : b;
               for(var i = 0; i< b.length; i++){
@@ -271,6 +278,7 @@
               return a;
             },[]);
             var option = {
+              theme : theme,
               title : {
                 text : title,
                 left : "center"
@@ -292,7 +300,6 @@
         }
       }
     });
-
     Veditor.register("barchart_stack", {
       name : "柱状图(堆积)",
       properties : [{
@@ -314,31 +321,20 @@
         "type" : "input",
         "name" : 'height',
         "default" : "300"
+      },{
+        "type" : "select",
+        "name" : 'theme',
+        "default" : "default",
+        "options" : [
+          ["default", "默认"],
+          ["macarons", "蓝色"],
+          ["dark", "黑色"],
+          ["light", "亮色"]
+        ]
       }],
       component : {
         template : "<div v-echart:option=\"option\" v-height:height=\"height\"></div>",
-        directives : {
-          echart : {
-            inserted : function(e, b, o, n){
-              var option = b.value;
-              setTimeout(function(){
-                e.echart = echarts.init(e);
-                e.echart.setOption(option);
-              });
-            },
-            update : function(e, b, o, n){
-              var option = b.value;
-              e.echart.setOption(option);
-            },
-            unbind : function(e){
-              e.echart.dispose();
-            }
-          },
-          height : function(e, b, o, n){
-            e.style.height = b.value + "px";
-            e.echart && e.echart.resize();
-          }
-        },
+        directives : echartDir,
         computed : {
           height : function(){
             var height = this.getAttribute("height");
@@ -347,6 +343,7 @@
           option : function(){
             var cat = this.getAttribute("category");
             var title = this.getAttribute("title");
+            var theme = this.getAttribute("theme");
             var series = this.getAttribute("value").reduce(function(a, b){
               b = typeof b === "number" ? [b] : b;
               for(var i = 0; i< b.length; i++){
@@ -360,6 +357,7 @@
               return a;
             },[]);
             var option = {
+              theme : theme,
               title : {
                 text : title,
                 left : "center"

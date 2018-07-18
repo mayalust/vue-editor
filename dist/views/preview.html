@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html
+    lang="en">
+<head>
+  <meta
+      charset="UTF-8">
+  <title>
+    Title</title>
+  <script src="vue/dist/vue.js"></script>
+  <link rel="stylesheet" href="css/components.css"/>
+  <link rel="stylesheet" href="css/index.css"/>
+  <link rel="stylesheet" href="css/bootstrap.css"/>
+  <script src="echarts/dist/echarts.js"></script>
+  <script src="echarts/theme/macarons.js"></script>
+  <script src="url.js"></script>
+  <script src="veditor.js"></script>
+  <script src="components.js"></script>
+</head>
+<body draggable = "false">
+  <div id="app"></div>
+  <script>
+    /** 注册一个名为TEXT的自定义组件到设计器 */
+    /** 使用中间件引用Veditor */
+    Veditor.use(Components);
+    /** 这两行顺序不能错 */
+    Vue.use(Veditor);
+    new Vue({
+      template : "<div class=\"row\">\
+        <div>\
+          <free-board-prev options=\"options\"></free-board-prev>\
+        </div>\
+      </div>",
+      data : function(){
+        var cur = this, url = urlparse();
+        cur.postJSON("api/getlayout/" + url.param["id"], null, function(event){
+          if(event.code == 0){
+            cur.options = event.data;
+          }
+        });
+        return {
+          tools : Veditor.tools,
+          options : []
+        }
+      }
+    }).$mount("#app");
+  </script>
+</body>
+</html>
