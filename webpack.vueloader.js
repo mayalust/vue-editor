@@ -9,7 +9,6 @@ const __DEVELOPMENT__ = {
     path : pathLib.join(__dirname, "dist/www"),
     filename: "[name].js"
   },
-  devtool: '#source-map',
   mode : "development",
   module: {
     rules: [

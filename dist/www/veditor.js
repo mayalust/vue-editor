@@ -31,7 +31,7 @@
       layout : "布局",
       table : "表格"
     }
-    valExp = ["([0-9]+|[0-9]*.[0-9]+)", "(true)", "(false)", "^\"(.*)\"$"];
+  valExp = ["([0-9]+|[0-9]*.[0-9]+)", "(true)", "(false)", "^\"(.*)\"$"];
   function nextTick(fn){
     setTimeout(fn, 100);
   }
@@ -315,8 +315,8 @@
       }
       function switchValue(p, i){
         var findDef = propDefines.find(function(n){
-          return n.name === i;
-        }) || {},
+            return n.name === i;
+          }) || {},
           rule = switchRule[findDef.type];
         return isFunction(rule) ? rule(p) : null
       }
@@ -472,8 +472,8 @@
           },
           end : function(){
             commandStack.push(cmd);
-            emit("command:add", cmd);
             commandInx++;
+            emit("command:add", cmd);
           }
         }
       },
@@ -968,135 +968,135 @@
     inserted : function(el, b){
       var buttonWrap, widget, target,
         buttons = [{
-        name : "编辑",
-        onclick : function(e){
-          var val = prop(el.parentNode, "_header"),
-            map = vueEditor.toolsMap[val['type']],
-            props = val.properties,
-            command = cmd.addCommand({
-              name : "edit tool",
-              msg : "编辑了[" + map.title + "]组件的属性",
-            }),
-            propDefines = map.propDefines.map(function(n){
-              var rs = plainClone(n);
-              rs.value = props[rs.name];
-              return rs;
-            }),
-            modal = createProperties("编辑属性", propDefines);
-          modal.on("submit", function(e){
-            var old = plainClone(props);
-            command.process({
-              forward : [updateNode, [props, e]],
-              backward : [updateNode, [props, old]]
+          name : "编辑",
+          onclick : function(e){
+            var val = prop(el.parentNode, "_header"),
+              map = vueEditor.toolsMap[val['type']],
+              props = val.properties,
+              command = cmd.addCommand({
+                name : "edit tool",
+                msg : "编辑了[" + map.title + "]组件的属性",
+              }),
+              propDefines = map.propDefines.map(function(n){
+                var rs = plainClone(n);
+                rs.value = props[rs.name];
+                return rs;
+              }),
+              modal = createProperties("编辑属性", propDefines);
+            modal.on("submit", function(e){
+              var old = plainClone(props);
+              command.process({
+                forward : [updateNode, [props, e]],
+                backward : [updateNode, [props, old]]
+              })
+              updateNode(props, e);
+              command.end();
+              modal.destroy();
+            });
+            modal.on("close", function(e){
+              modal.destroy();
             })
-            updateNode(props, e);
+          }
+        },{
+          name : "剪切",
+          onclick : function(e){
+            var fromValue = prop(el.parentNode, "_header"),
+              map = vueEditor.toolsMap[fromValue['type']],
+              command = cmd.addCommand({
+                name : "remove tool",
+                msg : "剪切[" + map.title + "]组件"
+              }),
+              next = getNextNode(fromValue);
+            if(next){
+              removeChildNode(fromValue);
+              command.process({
+                forward : [removeChildNode, fromValue],
+                backward : [insertChildNode, [next, fromValue]]
+              })
+            } else {
+              removeChildNode(fromValue);
+              command.process({
+                forward : [removeChildNode, fromValue],
+                backward : [pushChildNode, [fromValue.parent, fromValue]]
+              })
+            }
+            storage.set("freeboardcopy", plainClone(fromValue));
             command.end();
-            modal.destroy();
-          });
-          modal.on("close", function(e){
-            modal.destroy();
-          })
-        }
-      },{
-        name : "剪切",
-        onclick : function(e){
-          var fromValue = prop(el.parentNode, "_header"),
-            map = vueEditor.toolsMap[fromValue['type']],
-            command = cmd.addCommand({
-              name : "remove tool",
-              msg : "剪切[" + map.title + "]组件"
-            }),
-            next = getNextNode(fromValue);
-          if(next){
-            removeChildNode(fromValue);
-            command.process({
-              forward : [removeChildNode, fromValue],
-              backward : [insertChildNode, [next, fromValue]]
-            })
-          } else {
-            removeChildNode(fromValue);
-            command.process({
-              forward : [removeChildNode, fromValue],
-              backward : [pushChildNode, [fromValue.parent, fromValue]]
-            })
           }
-          storage.set("freeboardcopy", plainClone(fromValue));
-          command.end();
-        }
-      },{
-        name : "复制",
-        onclick : function(e){
-          var val = prop(el.parentNode, "_header");
-          storage.set("freeboardcopy", plainClone(val));
-        }
-      },{
-        name : "前插粘贴",
-        onclick : function(e){
-          var target = e.currentTarget,
-            fromValue = storage.get("freeboardcopy"),
-            map = vueEditor.toolsMap[fromValue['type']],
-            command = cmd.addCommand({
-              name : "remove tool",
-              msg : "粘贴(向前)[" + map.title + "]组件"
-            }),
-            toValue = prop(el.parentNode, "_header"),
-            cl = plainClone(fromValue);
-          if(toValue){
-            insertChildNode(toValue, cl);
-            command.process({
-              forward : [insertChildNode, [toValue, cl]],
-              backward : [removeChildNode, cl]
-            })
+        },{
+          name : "复制",
+          onclick : function(e){
+            var val = prop(el.parentNode, "_header");
+            storage.set("freeboardcopy", plainClone(val));
           }
-          command.end();
-        }
-      },{
-        name : "后插粘贴",
-        onclick : function(e){
-          var target = e.currentTarget,
-            fromValue = storage.get("freeboardcopy"),
-            map = vueEditor.toolsMap[fromValue['type']],
-            command = cmd.addCommand({
-              name : "remove tool",
-              msg : "粘贴(向后)[" + map.title + "]组件"
-            }),
-            toValue = prop(el.parentNode, "_header"),
-            cl = plainClone(fromValue);
-          if(toValue){
-            afterChildNode(toValue, cl);
-            command.process({
-              forward : [afterChildNode, [toValue, cl]],
-              backward : [removeChildNode, cl]
-            })
+        },{
+          name : "前插粘贴",
+          onclick : function(e){
+            var target = e.currentTarget,
+              fromValue = storage.get("freeboardcopy"),
+              map = vueEditor.toolsMap[fromValue['type']],
+              command = cmd.addCommand({
+                name : "remove tool",
+                msg : "粘贴(向前)[" + map.title + "]组件"
+              }),
+              toValue = prop(el.parentNode, "_header"),
+              cl = plainClone(fromValue);
+            if(toValue){
+              insertChildNode(toValue, cl);
+              command.process({
+                forward : [insertChildNode, [toValue, cl]],
+                backward : [removeChildNode, cl]
+              })
+            }
+            command.end();
           }
-          command.end();
-        }
-      },{
-        name : "删除",
-        onclick : function(e){
-          var fromValue = prop(el.parentNode, "_header"),
-            map = vueEditor.toolsMap[fromValue['type']],
-            command = cmd.addCommand({
-              name : "remove tool",
-              msg : "删除[" + map.title + "]组件"
-            }),
-            next = getNextNode(fromValue);
-          if(next){
-            removeChildNode(fromValue);
-            command.process({
-              forward : [removeChildNode, fromValue],
-              backward : [insertChildNode, [next, fromValue]]
-            })
-          } else {
-            removeChildNode(fromValue);
-            command.process({
-              forward : [removeChildNode, fromValue],
-              backward : [pushChildNode, [fromValue.parent, fromValue]]
-            })
+        },{
+          name : "后插粘贴",
+          onclick : function(e){
+            var target = e.currentTarget,
+              fromValue = storage.get("freeboardcopy"),
+              map = vueEditor.toolsMap[fromValue['type']],
+              command = cmd.addCommand({
+                name : "remove tool",
+                msg : "粘贴(向后)[" + map.title + "]组件"
+              }),
+              toValue = prop(el.parentNode, "_header"),
+              cl = plainClone(fromValue);
+            if(toValue){
+              afterChildNode(toValue, cl);
+              command.process({
+                forward : [afterChildNode, [toValue, cl]],
+                backward : [removeChildNode, cl]
+              })
+            }
+            command.end();
           }
-          command.end();
-        }
-      }];
+        },{
+          name : "删除",
+          onclick : function(e){
+            var fromValue = prop(el.parentNode, "_header"),
+              map = vueEditor.toolsMap[fromValue['type']],
+              command = cmd.addCommand({
+                name : "remove tool",
+                msg : "删除[" + map.title + "]组件"
+              }),
+              next = getNextNode(fromValue);
+            if(next){
+              removeChildNode(fromValue);
+              command.process({
+                forward : [removeChildNode, fromValue],
+                backward : [insertChildNode, [next, fromValue]]
+              })
+            } else {
+              removeChildNode(fromValue);
+              command.process({
+                forward : [removeChildNode, fromValue],
+                backward : [pushChildNode, [fromValue.parent, fromValue]]
+              })
+            }
+            command.end();
+          }
+        }];
       function remove(){
         widget.remove();
         buttonWrap = null;
@@ -1592,7 +1592,24 @@
       if(xhr.readyState == 4){
         if(xhr.status == 200){
           var json = JSON.parse(xhr.responseText);
-          callback(json);
+          callback && callback(json);
+        }
+      };
+    }
+  }
+  function getJSON(url, param, callback){
+    var xhr = new XMLHttpRequest();
+    param = JSON.stringify(param);
+    xhr.onreadystatechange = state_Change;
+    xhr.withCredentials = true;
+    xhr.open("GET",url,true);
+    xhr.setRequestHeader("Content-Type", "text/plain");
+    xhr.send(param);
+    function state_Change(){
+      if(xhr.readyState == 4){
+        if(xhr.status == 200){
+          var json = JSON.parse(xhr.responseText);
+          callback && callback(json);
         }
       };
     }
@@ -1632,10 +1649,10 @@
                   window.open("edit?id=" + match[1]);
                 });
                 dragBtn.setAttribute("class", "drag");
-                group.appendChild(dragBtn);
-                this.type == "file" && group.appendChild(editBtn);
+                this.type !== "file" && group.appendChild(dragBtn);
+                this.type == "file" && this.basename !== "view_" + viewId + ".json"  && group.appendChild(editBtn);
                 this.type == "file" && setTimeout(function(){
-                  cur.text.style.color = "blue";
+                  cur.text.style.color = "#6061a6";
                   cur.text.style.textDecoration = "underline";
                 });
                 this.render(group);
@@ -1694,13 +1711,6 @@
         split : arr
       }
     },
-    computed : {
-      options : function(){
-        var attr = this.attr("options"),
-          options = this.parent().data(attr);
-        return options;
-      }
-    },
     data : function(){
       var cur = this, row = extend({}, vueEditor.toolsMap["row"].data);
       return {
@@ -1713,9 +1723,11 @@
           }]
         })
       }
-    }
+    },
+    props : ['options']
   }
   vueEditor.install = function(Vue){
+    Vue.prototype.getJSON = getJSON;
     Vue.prototype.postJSON = postJSON;
     Vue.prototype.parent = function(){
       return this.$parent
@@ -1772,10 +1784,13 @@
     })
   }
   vueEditor.save = function(){
+    alert("视图[view_" + viewId + ".json]保存完毕");
     cmd.init();
-    var params = JSON.stringify(plainClone(_options), null, 2);
-    //console.log(toHTML(_options));
-    postJSON("api/savelayout/abc", params, function(event){
+    emit("command:change", cmd.getAllCommand());
+    var params = JSON.stringify(plainClone(_options), null, 2),
+      url = urlparse(),
+      viewId = url.param.id;
+    postJSON("api/savelayout/" + viewId, params, function(event){
       if(event.code == 0){
         console.log("event");
       }
@@ -1790,9 +1805,9 @@
   vueEditor.history = function(button, e){
     var commands = cmd.getAllCommand(),
       offset = getOffset(e.currentTarget)
-      historys = commands[0].concat(commands[1]).map(function(n, i){
-        return [i, n.msg];
-      }), offsetLeft = 200;
+    historys = commands[0].concat(commands[1]).map(function(n, i){
+      return [i, n.msg];
+    }), offsetLeft = 200;
     var dp = createDrop(historys, {
       index : commands[0].length - 1,
       top : offset.top + e.currentTarget.clientHeight,
@@ -1818,28 +1833,38 @@
   vueEditor.on = on;
   vueEditor.register = function(name, config, toTools){
     var properties = (function(props){
-      var rs = {};
-      each(props, function(p){
-        if(isObject(p)){
-          rs[p.name] = p["default"];
-        } else if (isArray(p)){
-          rs[p[1]] = p[2];
-        } else if (isString(p)){
-          rs[p] = null;
-        }
-      })
-      return rs;
-    })(config.properties), tool = {
-      title : config.name,
-      type : "predefined",
-      data : {
-        type : name,
-        properties : properties
-      },
-      propDefines : config.properties,
-      component : config.component
-    };
-    config.component && (config.component.name = "fb-" + name);
+        var rs = {};
+        each(props, function(p){
+          if(isObject(p)){
+            rs[p.name] = p["default"];
+          } else if (isArray(p)){
+            rs[p[1]] = p[2];
+          } else if (isString(p)){
+            rs[p] = null;
+          }
+        })
+        return rs;
+      })(config.properties),
+      tool = config._compiled ? {
+        title : config.name,
+        type : "predefined",
+        data : {
+          type : name,
+          properties : properties
+        },
+        propDefines : config.properties,
+        component : config
+      } : {
+        title : config.name,
+        type : "predefined",
+        data : {
+          type : name,
+          properties : properties
+        },
+        propDefines : config.properties,
+        component : config.component
+      };
+    tool.component && (tool.component.name = "fb-" + name);
     vueEditor.toolsMap = vueEditor.toolsMap || {};
     vueEditor.toolsMap[name] = tool;
     if(toTools !== false){

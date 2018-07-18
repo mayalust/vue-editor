@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html
+    lang="en">
+<head>
+  <meta
+      charset="UTF-8">
+  <title>
+    Title</title>
+  <link rel="stylesheet" href="css/components.css"/>
+  <link rel="stylesheet" href="css/index.css"/>
+  <link rel="stylesheet" href="css/bootstrap.css"/>
+  <link rel="stylesheet" href="proudsmart-tree/dist/css/ps-tree-basic.css"/>
+  <script src="vue/dist/vue.js"></script>
+  <script src="vueloader"></script>
+  <script src="proudsmart-tree/dist/ps-tree.js"></script>
+  <script src="echarts/dist/echarts.js"></script>
+  <script src="echarts/theme/macarons.js"></script>
+  <script src="toolkit/modal.js"></script>
+  <script src="url.js"></script>
+  <script src="veditor.js"></script>
+  <script src="components.js"></script>
+</head>
+<body draggable = "false">
+  <div id="app"></div>
+  <script>
+    /** 注册一个名为TEXT的自定义组件到设计器 */
+    /** 使用中间件引用Veditor */
+    Veditor.use(Components);
+    Veditor.use(comps);
+    /** 这两行顺序不能错 */
+    Vue.use(Veditor);
+
+    var command = {
+      setup : function(button, e){
+        Veditor.setup(button, e);
+      },
+      back : function(button, e){
+        Veditor.back(button, e);
+      },
+      forward : function(button, e){
+        Veditor.forward(button, e);
+      },
+      history : function(button, e){
+        Veditor.history(button, e);
+      },
+      save : function(button, e){
+        Veditor.save(button, e);
+        //console.log(this.options);
+      }
+    },
+      modal = Modal.createProperties,
+      buttons = [["setup", "设置", false], ["back", "撤销", true], ["forward", "前进", true], ["history", "历史", true], ["save", "保存", true]];
+    buttons = buttons.reverse();
+    new Vue({
+      template : "<div class=\"row\">\
+        <test></test>\
+        <div class=\"toppart\">\
+          视图设计器\
+          <span class=\"currentpath\">[{{curpath}}]</span>\
+          <button class=\"top-btn\" \
+            v-btndisabled='button[2]'\
+            v-for=\"button in buttons\" \
+            v-bind:class=\"disabled(button)\"\
+            v-on:click=\"click(button, $event)\">{{button[1]}}</button>\
+        </div>\
+        <div class=\"leftpart\">\
+          <free-board-control :options=\"tools\"></free-board-control>\
+        </div>\
+        <div class=\"rightpart\">\
+          <free-board options=\"options\"></free-board>\
+          <!-- <free-board-prev options=\"options\"></free-board-prev> -->\
+        </div>\
+      </div>",
+      methods : {
+        disabled : function(button){
+          return button[2] ? "disabled" : "";
+        },
+        click : function(button, e){
+          command[button[0]].call(this, button, e)
+        }
+      },
+      directives : {
+        btndisabled : {
+          inserted : function(el, b, o, n){
+            var value = b.value;
+            el.disabled = value;
+          },
+          update : function(el, b, o, n){
+            var value = b.value;
+            el.disabled = value;
+          }
+        }
+      },
+      data : function(){
+        var cur = this, url = urlparse(), viewId = url.param["id"];
+        Veditor.on("command:change", function(commands){
+          cur.buttons = cur.buttons.map(function(n, i){
+            if(n[0] == "back"){
+              n[2] = !commands[0].length
+            } else if(n[0] == "forward"){
+              n[2] = !commands[1].length
+            } else if(n[0] == "history"){
+              n[2] = !commands[1].length && !commands[0].length
+            } else if(n[0] == "save"){
+              n[2] = commands[2];
+            }
+            return n;
+          })
+        });
+        function renderTools(){
+          var filetree = [];
+          cur.postJSON("api/getfiletree", null, function(event){
+            if(event.code == 0){
+              [].push.apply(filetree, event.data.children);
+              filetree.push({
+                title : "组件",
+                name : "tools",
+                type : "directory",
+                children : Veditor.tools
+              });
+              cur.tools = filetree;
+            }
+          })
+        }
+        if(viewId){
+          cur.postJSON("api/getlayout/" + viewId, null, function(event){
+            if(event.code == 0){
+              cur.options = event.data;
+              renderTools();
+            }
+          });
+        } else {
+          modal("新建布局", [{
+            "type" : "input",
+            "title" : '名称',
+            "name" : "filename",
+            "value" : "newframework"
+          }], { dirtycheck : false }).on("submit", function(e){
+            var viewId = e.filename;
+            cur.postJSON("api/createlayout/" + viewId, null, function(event){
+              window.location.href = "edit?id=" + viewId;
+            });
+          });
+        }
+        this.$watch("tools",function(val,oldval){
+          console.log(val);
+        })
+        return {
+          curpath : "view_" + viewId + ".json",
+          buttons : buttons,
+          tools : [],
+          options : []
+        }
+      }
+    }).$mount("#app");
+  </script>
+</body>
+</html>

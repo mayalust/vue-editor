@@ -13,10 +13,19 @@ const bodyParser = require('body-parser'),
   isFunction = isType("Function"),
   isArray = isType("Array"),
   isString = isType("String"),
-  isObject = isType("Object")
+  isObject = isType("Object"),
+  webpack = require("webpack"),
+  webpackConfig = require("../webpack.vueloader.js");
 function isType(type){
   return function(obj){
     return tostring.call(obj) == "[object " + type + "]" && obj === obj;
+  }
+}
+function each(arr, callback){
+  var i;
+  arr = arr || [];
+  for(i=0; i<arr.length; i++){
+    callback && callback(arr[i], i);
   }
 }
 function payload(req, res, next){
@@ -50,6 +59,48 @@ function plainClone(obj){
   }
   return result;
 }
+function vueloader(req, res, next){
+  let path = url.parse(req.url), tree, content = "",
+    arr = path.pathname.split("/"), vues = [];
+  arr.shift();
+  if(arr[0] === "vueloader"){
+    tree = filtree(pathLib.join(__dirname, "www/vue"));
+    tree.on("start", function(n){
+      vues = n.children.map(function(n){
+        return n.basename.split(".vue")[0];
+      });
+      each(vues, function(v){
+        content += "import " + v + " from \"./vue/" + v + ".vue\";\n"
+      });
+      content += "var comps = {};\n";
+      content += "comps.install = function(Veditor){\n";
+      each(vues, function(v){
+        content += "  Veditor.register(\"" + v + "\", " + v + ");\n";
+      });
+      content += "};\n";
+      content += "window.comps = comps;\n";
+      fs.writeFile(pathLib.join(__dirname, "www/config.js"), content, function(e){
+        if(!e){
+          webpack(webpackConfig, function(err, stats){
+            if(err || stats.hasErrors()){
+              console.log("hasError");
+            }
+            fs.readFile(pathLib.join(__dirname, "www/comps.js"), function(e, d){
+              if(!e){
+                res.writeHead(200,{'Content-Type':'application/javascript; charset=UTF-8'});
+                res.write(d);
+                res.end();
+              }
+            });
+          })
+        }
+      })
+    })
+  } else {
+    next()
+  }
+}
+app.use(vueloader);
 app.use(payload);
 app.use(express.static(pathLib.join(__dirname , 'www')));
 app.use(express.static(pathLib.join(__dirname , '../node_modules')));
@@ -59,13 +110,20 @@ app.set("views", pathLib.join(__dirname , 'views'));
 app.engine('.html', ejs.__express);
 app.set('view engine', 'html')
 /** set up view engine*/
-
-app.get("/edit", (req, res) => {
+app.get("/", (req, res) => {
   res.render("index");
+  res.end();
+});
+app.get("/edit", (req, res) => {
+  res.render("edit");
   res.end();
 });
 app.get("/preview", (req, res) => {
   res.render("preview");
+  res.end();
+});
+app.get("/production", (req, res) => {
+  res.render("production");
   res.end();
 });
 app.post("/api/savelayout/:viewId", (req, res) => {
@@ -148,5 +206,5 @@ app.post("/api/createlayout/:viewId", (req, res) => {
 
   })
 });
-app.listen(9000);
+app.listen(9001);
 console.log("设计器已启动，请访问localhost:9000")

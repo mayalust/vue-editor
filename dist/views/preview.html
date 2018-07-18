@@ -6,6 +6,7 @@
       charset="UTF-8">
   <title>
     Title</title>
+  <script src="vueloader"></script>
   <script src="vue/dist/vue.js"></script>
   <link rel="stylesheet" href="css/components.css"/>
   <link rel="stylesheet" href="css/index.css"/>
@@ -22,6 +23,7 @@
     /** 注册一个名为TEXT的自定义组件到设计器 */
     /** 使用中间件引用Veditor */
     Veditor.use(Components);
+    Veditor.use(comps);
     /** 这两行顺序不能错 */
     Vue.use(Veditor);
     new Vue({

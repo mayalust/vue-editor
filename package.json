@@ -1,6 +1,6 @@
 {
   "name": "proudsmart-vue-editor",
-  "version": "1.0.31",
+  "version": "1.0.32",
   "description": "vue-editor",
   "main": "dist/veditor.js",
   "scripts": {
@@ -26,10 +26,15 @@
   "dependencies": {
     "body-parser": "^1.18.3",
     "bootstrap": "^4.1.1",
+    "css-loader": "^1.0.0",
     "echarts": "^4.1.0",
     "ejs": "^2.6.1",
     "express": "^4.16.3",
     "proudsmart-tree": "^1.0.38",
-    "vue": "^2.5.16"
+    "style-loader": "^0.21.0",
+    "vue": "^2.5.16",
+    "vue-loader": "^15.2.6",
+    "vue-template-compiler": "^2.5.16",
+    "vue-template-loader": "^1.0.0"
   }
 }

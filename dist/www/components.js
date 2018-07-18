@@ -22,7 +22,12 @@
         setTimeout(function(){
           e.theme = option.theme;
           e.echart = echarts.init(e, option.theme);
-          e.echart.setOption(option);
+          if(option){
+            e.echart.setOption(option);
+          } else {
+            e.echart.showLoading();
+          }
+
         });
         window.addEventListener("resize", resize);
       },
@@ -32,10 +37,60 @@
           e.theme = option.theme;
           e.echart.dispose();
           e.echart = echarts.init(e, option.theme);
-          e.echart.setOption(option);
+          if(option){
+            e.echart.setOption(option);
+            e.echart.hideLoading();
+          } else {
+            e.echart.showLoading();
+          }
         } else {
           e.echart.setOption(option);
+          e.echart.hideLoading();
         }
+      },
+      unbind : function(e){
+        e.echart.dispose();
+        window.removeEventListener("resize", e.resizeEvent)
+      }
+    },
+    mapchart : {
+      inserted : function(e, b, o, n){
+        var option = b.value,
+          vm = o.context,
+          promise = new Promise(function(res, rej){
+            vm.getJSON("china.json", null, function(d){
+              echarts.registerMap("china", d);
+              res("ready");
+            })
+          });
+        function resize(){
+          e.echart.resize();
+        }
+        e._promise = promise;
+        e.resizeEvent = resize;
+        setTimeout(function(){
+          e.theme = option.theme;
+          e.echart = echarts.init(e, option.theme);
+          e.echart.showLoading();
+          promise.then(function(){
+            e.echart.hideLoading();
+            e.echart.setOption(option);
+          });
+        });
+        window.addEventListener("resize", resize);
+      },
+      update : function(e, b, o, n){
+        var option = b.value;
+        promise.then(function() {
+          if (e.theme != option.theme) {
+            e.theme = option.theme;
+            e.echart.dispose();
+            e.echart = echarts.init(e, option.theme);
+            e.echart.setOption(option);
+          } else {
+            e.echart.setOption(option);
+          }
+        })
       },
       unbind : function(e){
         e.echart.dispose();
@@ -375,6 +430,48 @@
           },
           theme : function(){
             return "fb-" + this.getAttribute("theme");
+          }
+        }
+      }
+    });
+    Veditor.register("mapchart", {
+      name : "地图选择",
+      properties : [{
+        "title" : "标题",
+        "type" : "input",
+        "name" : 'title',
+        "default" : "\"地图组件\""
+      },{
+        "title" : "高度",
+        "type" : "input",
+        "name" : 'height',
+        "default" : "300"
+      }],
+      component : {
+        template : "<div v-mapchart:option=\"option\" v-height:height=\"height\"></div>",
+        directives : echartDir,
+        computed : {
+          height : function(){
+            var height = this.getAttribute("height");
+            return height;
+          },
+          option : function(){
+            var title = this.getAttribute("title");
+            var option = {
+              title : {
+                text : title,
+                left : "center"
+              },
+              series: [
+                {
+                  name: title,
+                  type: 'map',
+                  mapType: 'china',
+                  data:[]
+                }
+              ]
+            }
+            return option;
           }
         }
       }
