@@ -65,11 +65,15 @@ function vueloader(req, res, next){
   arr.shift();
   if(arr[0] === "vueloader"){
     tree = filtree(pathLib.join(__dirname, "www/vue"));
-    tree.on("start", function(n){
-      vues = n.children.map(function(n){
-        return n.basename.split(".vue")[0];
-      });
-      each(vues, function(v){
+    tree.on("start", (n) => {
+      vues = n.children
+        .filter((n) => {
+          return n.type == "file" && n.ext == ".vue"
+        })
+        .map((n) => {
+          return n.basename.split(".vue")[0]
+        });
+      each(vues, (v) => {
         content += "import " + v + " from \"./vue/" + v + ".vue\";\n"
       });
       content += "var comps = {};\n";
@@ -79,13 +83,13 @@ function vueloader(req, res, next){
       });
       content += "};\n";
       content += "window.comps = comps;\n";
-      fs.writeFile(pathLib.join(__dirname, "www/config.js"), content, function(e){
+      fs.writeFile(pathLib.join(__dirname, "www/config.js"), content, (e) => {
         if(!e){
           webpack(webpackConfig, function(err, stats){
             if(err || stats.hasErrors()){
               console.log("hasError");
             }
-            fs.readFile(pathLib.join(__dirname, "www/comps.js"), function(e, d){
+            fs.readFile(pathLib.join(__dirname, "www/comps.js"), (e, d) => {
               if(!e){
                 res.writeHead(200,{'Content-Type':'application/javascript; charset=UTF-8'});
                 res.write(d);
@@ -206,5 +210,5 @@ app.post("/api/createlayout/:viewId", (req, res) => {
 
   })
 });
-app.listen(9001);
+app.listen(9000);
 console.log("设计器已启动，请访问localhost:9000")

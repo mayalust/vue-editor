@@ -103,6 +103,7 @@
     }
   }
   components.install = function(Veditor){
+    /**
     Veditor.register("text", {
       name : "文字",
       properties : [{
@@ -132,7 +133,7 @@
         }
       }
     });
-
+    **/
     Veditor.register("linechart", {
       name : "折线图(类目)",
       properties : [{
@@ -430,48 +431,6 @@
           },
           theme : function(){
             return "fb-" + this.getAttribute("theme");
-          }
-        }
-      }
-    });
-    Veditor.register("mapchart", {
-      name : "地图选择",
-      properties : [{
-        "title" : "标题",
-        "type" : "input",
-        "name" : 'title',
-        "default" : "\"地图组件\""
-      },{
-        "title" : "高度",
-        "type" : "input",
-        "name" : 'height',
-        "default" : "300"
-      }],
-      component : {
-        template : "<div v-mapchart:option=\"option\" v-height:height=\"height\"></div>",
-        directives : echartDir,
-        computed : {
-          height : function(){
-            var height = this.getAttribute("height");
-            return height;
-          },
-          option : function(){
-            var title = this.getAttribute("title");
-            var option = {
-              title : {
-                text : title,
-                left : "center"
-              },
-              series: [
-                {
-                  name: title,
-                  type: 'map',
-                  mapType: 'china',
-                  data:[]
-                }
-              ]
-            }
-            return option;
           }
         }
       }

@@ -1846,7 +1846,7 @@
         return rs;
       })(config.properties),
       tool = config._compiled ? {
-        title : config.name,
+        title : config.title || config.name,
         type : "predefined",
         data : {
           type : name,

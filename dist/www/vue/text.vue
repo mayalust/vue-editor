@@ -1,14 +1,9 @@
 <template>
-  <div class="test">{{a}}</div>
+  <div class="test" v-bind:class="theme">{{value}}</div>
 </template>
 <script type="text/ecmascript">
   export default {
-    name: "test",
-    data : function(){
-      return {
-        a : 20
-      }
-    },
+    title : "VUE文字组件",
     properties : [{
       "type" : "input",
       "name" : 'value',
@@ -23,11 +18,17 @@
         ["red", "红色"],
         ["gray", "灰背景"],
       ]
-    }]
+    }],
+    computed : {
+      value : function(){
+        return this.getAttribute("value")
+      },
+      theme : function(){
+        return this.getAttribute("theme")
+      }
+    }
   }
 </script>
 <style scoped>
-  .test {
-    font-size : 60px;
-  }
+
 </style>

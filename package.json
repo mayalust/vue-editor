@@ -1,6 +1,6 @@
 {
   "name": "proudsmart-vue-editor",
-  "version": "1.0.32",
+  "version": "1.0.33",
   "description": "vue-editor",
   "main": "dist/veditor.js",
   "scripts": {

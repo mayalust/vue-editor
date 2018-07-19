@@ -25,11 +25,10 @@
   <script>
     /** 注册一个名为TEXT的自定义组件到设计器 */
     /** 使用中间件引用Veditor */
-    Veditor.use(Components);
     Veditor.use(comps);
+    Veditor.use(Components);
     /** 这两行顺序不能错 */
     Vue.use(Veditor);
-
     var command = {
       setup : function(button, e){
         Veditor.setup(button, e);
@@ -53,7 +52,6 @@
     buttons = buttons.reverse();
     new Vue({
       template : "<div class=\"row\">\
-        <test></test>\
         <div class=\"toppart\">\
           视图设计器\
           <span class=\"currentpath\">[{{curpath}}]</span>\
