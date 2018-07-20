@@ -55,31 +55,31 @@
     mapchart : {
       inserted : function(e, b, o, n){
         var option = b.value,
-          vm = o.context,
-          promise = new Promise(function(res, rej){
-            vm.getJSON("china.json", null, function(d){
-              echarts.registerMap("china", d);
+          vm = o.context;
+        e._promise = promise = new Promise(function(res, rej){
+          vm.getJSON("china.json", null, function(d){
+            echarts.registerMap("china", d);
+            setTimeout(function(){
+              e.resizeEvent = resize;
+              e.theme = option.theme;
+              e.echart = echarts.init(e, option.theme);
+              e.echart.showLoading();
+              function resize(){
+                e.echart.resize();
+              }
+              window.addEventListener("resize", resize);
               res("ready");
-            })
-          });
-        function resize(){
-          e.echart.resize();
-        }
-        e._promise = promise;
-        e.resizeEvent = resize;
-        setTimeout(function(){
-          e.theme = option.theme;
-          e.echart = echarts.init(e, option.theme);
-          e.echart.showLoading();
-          promise.then(function(){
-            e.echart.hideLoading();
-            e.echart.setOption(option);
+            });
           });
         });
-        window.addEventListener("resize", resize);
+        promise.then(function(){
+          e.echart.hideLoading();
+          e.echart.setOption(option);
+        });
       },
       update : function(e, b, o, n){
         var option = b.value;
+        var promise = e._promise;
         promise.then(function() {
           if (e.theme != option.theme) {
             e.theme = option.theme;

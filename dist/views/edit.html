@@ -26,8 +26,7 @@
     /** 注册一个名为TEXT的自定义组件到设计器 */
     /** 使用中间件引用Veditor */
     Veditor.use(comps);
-    Veditor.use(Components);
-    /** 这两行顺序不能错 */
+    Veditor.use(Components);/** 这两行顺序不能错 */
     Vue.use(Veditor);
     var command = {
       setup : function(button, e){

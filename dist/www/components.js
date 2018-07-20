@@ -104,7 +104,7 @@
   }
   components.install = function(Veditor){
     /**
-    Veditor.register("text", {
+    Veditor.register("test", {
       name : "文字",
       properties : [{
         "type" : "input",
@@ -132,8 +132,7 @@
           }
         }
       }
-    });
-    **/
+    });**/
     Veditor.register("linechart", {
       name : "折线图(类目)",
       properties : [{

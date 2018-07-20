@@ -7,30 +7,64 @@
     "children": [
       {
         "type": "col",
-        "class": "col-xs-3",
-        "colnum": 3,
+        "class": "col-xs-2",
+        "colnum": 2,
+        "children": []
+      },
+      {
+        "type": "col",
+        "class": "col-xs-8",
+        "colnum": 8,
         "children": [
           {
-            "type": "selectlist",
+            "type": "text",
             "properties": {
-              "output": "select"
+              "value": "地图文字信息",
+              "theme": "big"
             }
+          },
+          {
+            "type": "row",
+            "properties": {
+              "theme": "normal"
+            },
+            "children": [
+              {
+                "type": "col",
+                "class": "col-xs-3",
+                "colnum": 3,
+                "children": [
+                  {
+                    "type": "selectlist",
+                    "properties": {
+                      "output": "[to:select]"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "col",
+                "class": "col-xs-9",
+                "colnum": 9,
+                "children": [
+                  {
+                    "type": "mapchart",
+                    "properties": {
+                      "title": "[from:select]",
+                      "height": "600"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
       {
         "type": "col",
-        "class": "col-xs-9",
-        "colnum": 9,
-        "children": [
-          {
-            "type": "mapchart",
-            "properties": {
-              "title": "\"\"",
-              "height": "700"
-            }
-          }
-        ]
+        "class": "col-xs-2",
+        "colnum": 2,
+        "children": []
       }
     ]
   }

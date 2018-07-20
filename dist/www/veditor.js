@@ -30,7 +30,10 @@
       echarts : "图表",
       layout : "布局",
       table : "表格"
-    }
+    },
+    watchers = [],
+    watchersMap = {},
+    storage = SessionStorageFactory(),
   valExp = ["([0-9]+|[0-9]*.[0-9]+)", "(true)", "(false)", "^\"(.*)\"$"];
   function nextTick(fn){
     setTimeout(fn, 100);
@@ -244,6 +247,9 @@
   function log(msg){
     console.log.apply(console, arguments);
   }
+  function warn(msg){
+    console.warn.apply(console, arguments);
+  }
   function error(msg){
     console.error.apply(console, arguments);
   }
@@ -386,36 +392,71 @@
     }
     return tree;
   }
+  function removePropWatchers(n){
+    var properties = n.properties, match, inx;
+    eachProp(properties, function(n, i){
+      match = getWatcher(n);
+      if( isArray( match ) && match[0] == "_watch"){
+        inx = watchers.indexOf(match[1]);
+        watchers.splice(i, 1);
+        delete watchersMap[item[1]];
+      }
+    })
+  }
+  function addPropWatchers(node){
+    var properties = node.properties, match;
+    eachProp(properties, function(n, i){
+      match = getWatcher(n);
+      if( isArray(match) && match[0] == "_watch" ){
+        watchers.push( match );
+        watchersMap[match[1]] = watchersMap[match[1]] || [];
+        watchersMap[match[1]].push(function(){
+          node.properties = extend({}, node.properties);
+        });
+      }
+    })
+  }
   function removeChildNode(node){
     var parentlist = node.parentlist;
     inx = parentlist.indexOf(node);
     parentlist.splice(inx, 1);
+    recrusive(node, removePropWatchers);
+    emit("node:removed", node);
   }
   function pushChildNode(node, child){
     child.parentlist = node.children;
     child.parent = node;
     node.children = node.children || [];
     node.children.push(child);
-    recursive(node);
+    recursive(node, addPropWatchers);
+    emit("node:added", node);
   }
   function insertChildNode(node, child){
-    var parent = child.parent = node.parent,
+    var parent = child.parent = node.parent, fn,
       parentlist = child.parentlist = node.parentlist;
     inx = parentlist.indexOf(node);
     parentlist.splice(inx, 0, child);
-    recursive(parent || parentlist);
-  }
-  function getNextNode(node){
-    parentlist = node.parentlist;
-    inx = parentlist.indexOf(node);
-    return parentlist[inx + 1] || null;
+    recursive(parent || parentlist, addPropWatchers);
+    emit("node:added", node);
   }
   function afterChildNode(node, child){
     var parent = child.parent = node.parent,
       parentlist = child.parentlist = node.parentlist;
     inx = parentlist.indexOf(node);
     parentlist.splice(inx + 1, 0, child);
-    recursive(parent || parentlist);
+    recursive(parent || parentlist, addPropWatchers);
+    emit("node:added", node);
+  }
+  function updateNode(target, obj){
+    eachProp(obj, function(n, i){
+      target[i] = n;
+    });
+    emit("node:updated", target);
+  }
+  function getNextNode(node){
+    parentlist = node.parentlist;
+    inx = parentlist.indexOf(node);
+    return parentlist[inx + 1] || null;
   }
   function SessionStorageFactory(){
     return {
@@ -427,14 +468,83 @@
       }
     }
   }
-  function getValue(str){
-    var exps = [/^(\".*\")$/g, /^(\d+)$/g, /^(\[.*\])$/g, /^(\{.*\})$/g], match;
-    while(match = exps.shift()){
-      match = match.exec(str);
-      if(match){
-        return eval(match[1]);
+  var valueWatcher = {
+    "fromVariable" : {
+      exp : new RegExp("^\\[from:(.*)\\]$", "g"),
+      watcher : function(d){
+        return ["_watch", d, function (val){
+          console.log(val);
+        }];
+      }
+    },
+    "toVariable" : {
+      exp : new RegExp("^\\[to:(.*)\\]$", "g"),
+      watcher : function(d){
+        /** unit-test used only **/
+        return ["_change", d, function (val){
+          var filter = watchersMap[d];
+          each(filter, function(n){
+            n(val);
+          })
+        }];
       }
     }
+  }
+  var valueSwitcher = {
+    "fromVariable" : {
+      exp : new RegExp("^\\[from:(.*)\\]$", "g"),
+      handler : function(d){
+        return function(target){
+          return target[d];
+        }
+      }
+    },
+    "toVariable" : {
+      exp : new RegExp("^\\[to:(.*)\\]$", "g"),
+      handler : function(d){
+        return function(target){
+          return target[d];
+        }
+      }
+    },
+    "number" : {
+      exp : new RegExp("^(\\d+)$", "g"),
+      handler : function(d){
+        return parseFloat(d);
+      }
+    },
+    "Array" : {
+      exp : new RegExp("^\\[(.*)\\]$", "g"),
+      handler : function(d){
+        return d.split(",");
+      }
+    },
+    "Object" : {
+      exp : new RegExp("^(\\{.*\\})$" ,"g"),
+      handler : function(d){
+        return JSON.parse(d);
+      }
+    }
+  }
+  function getValue( str ){
+    var match
+    for(var i in valueSwitcher){
+      valueSwitcher[i].exp.lastIndex = 0;
+      match = valueSwitcher[i].exp.exec(str);
+      if(match)
+        return valueSwitcher[i].handler(match[1]);
+    }
+    return str;
+  }
+  function getWatcher( str ){
+    var match
+    for(var i in valueWatcher){
+      valueWatcher[i].exp.lastIndex = 0;
+      match = valueWatcher[i].exp.exec(str);
+      if(match)
+        return valueWatcher[i].watcher(match[1]);
+    }
+    return null;
   }
   function getOffset(target){
     var parent = target, style,
@@ -731,8 +841,7 @@
         submit = null;
       }
     }
-  }
-  var storage = SessionStorageFactory();
+  };
   function getNextBlank(dom){
     var next = dom.nextSibling;
     return next && hasClass(next, "blank") ? next : null;
@@ -958,11 +1067,6 @@
         }
       }
     }
-  }
-  function updateNode(target, obj){
-    eachProp(obj, function(n, i){
-      target[i] = n;
-    });
   }
   var widget = {
     inserted : function(el, b){
@@ -1403,7 +1507,7 @@
         </div>\
       </div>",
     created : function(){
-      var cur = this;
+      this.isComponentRoot = true;
     },
     directives : {
       freeboardcontainer : freeboardcontainer,
@@ -1423,7 +1527,7 @@
           options = this.parent().data(attr),
           root = recursive({
             children : options
-          });
+          }, addPropWatchers);
         _options = options;
         return root;
       }
@@ -1434,15 +1538,21 @@
     template : "\
       <div class=\"freeboard preview\">\
         <html-recursive-prev\
-          v-for=\"op in options\"\
+          v-for=\"op in root.children\"\
           v-bind:option=\"op\"\>\
         </html-recursive-prev>\
       </div>",
+    created : function(){
+      this.isComponentRoot = true;
+    },
     computed : {
-      options : function(){
+      root : function(){
         var attr = this.attr("options"),
-          options = this.parent().data(attr);
-        return options;
+          options = this.parent().data(attr),
+          root = recursive({
+            children : options
+          }, addPropWatchers);
+        return root;
       }
     }
   }
@@ -1740,24 +1850,48 @@
         return this[str];
     }
     Vue.prototype.getAttribute = function(name){
-      var option = this.getComponent(),
+      var rootCompoent = this.getRootComponent(),
+        option = this.getComponent(),
         map = vueEditor.toolsMap[option['type']],
         propDefines = map ? map.propDefines : [],
         findDef = propDefines.find(function(n){
           return n.name == name;
         }),
         attr = option.properties[name],
-        attr = findDef ?
-          (findDef.type === "input"
-            ? getValue(attr) : attr) :
-          attr;
-      return attr;
+        match = getValue( attr );
+      return isFunction(match) ? match(rootCompoent) : match;
+    }
+    Vue.prototype.setAttribute = function(name, value){
+      var rootCompoent = this.getRootComponent(),
+        item,
+        option = this.getComponent(),
+        map = vueEditor.toolsMap[option['type']],
+        propDefines = map ? map.propDefines : [],
+        findDef = propDefines.find(function(n){
+          return n.name == name;
+        }),
+        attr = option.properties[name],
+        match = getWatcher( attr );
+      if(isArray(match) && match[0] === "_change"){
+        item = match[2];
+        rootCompoent[match[1]] = value;
+        item(value);
+      }
     }
     Vue.prototype.getComponent = function(){
       var parent = this;
       do{
         if(parent.freeboardComponent){
           return parent.$parent.option;
+        }
+      } while (parent = parent.$parent);
+      return null;
+    }
+    Vue.prototype.getRootComponent = function(){
+      var parent = this;
+      do{
+        if(parent.isComponentRoot){
+          return parent;
         }
       } while (parent = parent.$parent);
       return null;

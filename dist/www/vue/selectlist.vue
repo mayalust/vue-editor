@@ -13,11 +13,14 @@
     properties : [{
       "type" : "input",
       "name" : 'output',
-      "default" : "select"
+      "default" : "[scope:select]"
     }],
+    created : function(){
+      this.setAttribute("output", this.items[0].label);
+    },
     methods : {
       itemclick : function(item){
-        console.log(item.label);
+        this.setAttribute("output", item.label);
       }
     },
     data : function(){
@@ -27,6 +30,20 @@
         label : "第2机械厂"
       },{
         label : "第4机械厂"
+      },{
+        label : "第5机械厂"
+      },{
+        label : "第6机械厂"
+      },{
+        label : "第1机械厂"
+      },{
+        label : "第2机械厂"
+      },{
+        label : "第4机械厂"
+      },{
+        label : "第5机械厂"
+      },{
+        label : "第6机械厂"
       },{
         label : "第5机械厂"
       },{
@@ -48,9 +65,13 @@
 </script>
 <style scoped>
   .list-item {
-    background-color : blue;
+    cursor : pointer;
+    background-color : #206687;
     line-height : 50px;
     color : #fff;
-    border-bottom : 1px solid #fff;
+    border-bottom : 1px solid #13566c;
+  }
+  .list-item:hover{
+    background-color : #0f485b;
   }
 </style>

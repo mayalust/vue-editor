@@ -16,11 +16,29 @@
   <script src="url.js"></script>
   <script src="veditor.js"></script>
   <script src="components.js"></script>
+  <style>
+    .topmenus{
+      color : #fff;
+      background-color : #000;
+    }
+    .topmenus .menus{
+      cursor : pointer;
+      float : left;
+      padding : 0 40px;
+      line-height : 90px;
+    }
+    .topmenus .menus.active{
+      background-color : #444;
+    }
+    .topmenus .menus:hover{
+      background-color : #444;
+    }
+  </style>
 </head>
 <body draggable = "false">
   <div id="app"></div>
   <script>
-    var menus = ["abc1", "abc2", "abc3"], views = {};
+    var menus = ["第一个栏目", "第2个栏目", "第3个栏目"], views = {}, cachedFile;
     Veditor.use(Components);
     Veditor.use(comps);
     Vue.use(Veditor);
@@ -40,11 +58,15 @@
     new Vue({
       template : "<div class=\"row\">\
         <div>\
-          <div class=\"topmenus\">\
-            <div class=\"menus\" \
-              v-on:click=\"menuclick(file)\"\
-              v-for=\"file in files\">\
-              {{file[1]}}\
+          <div class=\"row topmenus\">\
+            <div class=\"col-md-2\"></div>\
+            <div class=\"col-md-8\">\
+              <div class=\"menus\" \
+                v-bind:class=\"file.active\"\
+                v-on:click=\"menuclick(file)\"\
+                v-for=\"file in files\">\
+                {{file[1]}}\
+              </div>\
             </div>\
           </div>\
           <free-board-prev options=\"options\"></free-board-prev>\
@@ -53,13 +75,18 @@
       methods : {
         menuclick : function(file){
           var cur = this;
+          cachedFile.active = "";
+          file.active = "active";
+          cachedFile = file;
+          window.location.hash = file[0];
+          cur.files = [].slice.call(cur.files);
           cur.getView(file[0], function(d){
             cur.options = d;
           })
         }
       },
       data : function(){
-        var cur = this, url = urlparse();
+        var cur = this, url = urlparse(), hash, findFile;
         cur.postJSON("api/getfiletree", null, function(event){
           if(event.code == 0){
             var layout = event.data.children.find(function(n, i){
@@ -69,7 +96,16 @@
               var match = new RegExp("^view_(.*)\\.json$", "g").exec(n.basename)
               return [match[1], menus[i]];
             });
-            cur.getView(cur.files[0][0], function(d){
+            if(!window.location.hash.substring(1)){
+              window.location.hash = cur.files[0][0];
+            }
+            hash = window.location.hash.substring(1);
+            findFile = cur.files.find(function(f){
+              return f[0] == hash;
+            })
+            cachedFile = findFile;
+            findFile.active = "active";
+            cur.getView(findFile[0], function(d){
               cur.options = d;
             })
           }

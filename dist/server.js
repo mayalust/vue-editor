@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const bodyParser = require('body-parser'),
+  child_process = require("child_process"),
   fs = require("fs"),
   pathLib = require("path"),
   express = require("express"),
@@ -16,6 +17,7 @@ const bodyParser = require('body-parser'),
   isObject = isType("Object"),
   webpack = require("webpack"),
   webpackConfig = require("../webpack.vueloader.js");
+let u;
 function isType(type){
   return function(obj){
     return tostring.call(obj) == "[object " + type + "]" && obj === obj;
@@ -210,5 +212,15 @@ app.post("/api/createlayout/:viewId", (req, res) => {
 
   })
 });
-app.listen(9000);
-console.log("设计器已启动，请访问localhost:9000")
+let server = app.listen(9000),
+  address = server.address();
+console.log("开发者模式已启动，请访问:","http://localhost:" + address.port, "打开浏览器");
+u = "http://localhost:9000";
+if(process.platform == 'wind32'){
+  cmd  = 'start "%ProgramFiles%\Internet Explorer\iexplore.exe"';
+} else if(process.platform == 'linux'){
+  cmd  = 'xdg-open';
+} else if(process.platform == 'darwin'){
+  cmd  = 'open';
+}
+child_process.exec(cmd + ' "'+u + '"');

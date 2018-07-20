@@ -1,1 +1,36 @@
-[]
+[
+  {
+    "type": "row",
+    "properties": {
+      "theme": "normal"
+    },
+    "children": [
+      {
+        "type": "col",
+        "class": "col-xs-2",
+        "colnum": 2,
+        "children": []
+      },
+      {
+        "type": "col",
+        "class": "col-xs-8",
+        "colnum": 8,
+        "children": [
+          {
+            "type": "search",
+            "properties": {
+              "time": "2018",
+              "area": "bj"
+            }
+          }
+        ]
+      },
+      {
+        "type": "col",
+        "class": "col-xs-2",
+        "colnum": 2,
+        "children": []
+      }
+    ]
+  }
+]
