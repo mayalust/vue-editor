@@ -215,6 +215,7 @@ app.post("/api/createlayout/:viewId", (req, res) => {
 let server = app.listen(9000),
   address = server.address();
 console.log("开发者模式已启动，请访问:","http://localhost:" + address.port, "打开浏览器");
+console.log("启始文件夹为：" + __dirname);
 u = "http://localhost:9000";
 if(process.platform == 'wind32'){
   cmd  = 'start "%ProgramFiles%\Internet Explorer\iexplore.exe"';
