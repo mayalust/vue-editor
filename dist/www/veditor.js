@@ -31,6 +31,10 @@
       layout : "布局",
       table : "表格"
     },
+    settings = {
+      title : "",
+      theme : "normal"
+    },
     watchers = [],
     watchersMap = {},
     storage = SessionStorageFactory(),
@@ -392,6 +396,7 @@
     }
     return tree;
   }
+  /**
   function removePropWatchers(n){
     var properties = n.properties, match, inx;
     eachProp(properties, function(n, i){
@@ -399,7 +404,7 @@
       if( isArray( match ) && match[0] == "_watch"){
         inx = watchers.indexOf(match[1]);
         watchers.splice(i, 1);
-        delete watchersMap[item[1]];
+        delete watchersMap[match[1]];
       }
     })
   }
@@ -415,12 +420,12 @@
         });
       }
     })
-  }
+  }*/
   function removeChildNode(node){
     var parentlist = node.parentlist;
     inx = parentlist.indexOf(node);
     parentlist.splice(inx, 1);
-    recrusive(node, removePropWatchers);
+    recursive(node);
     emit("node:removed", node);
   }
   function pushChildNode(node, child){
@@ -428,7 +433,7 @@
     child.parent = node;
     node.children = node.children || [];
     node.children.push(child);
-    recursive(node, addPropWatchers);
+    recursive(node);
     emit("node:added", node);
   }
   function insertChildNode(node, child){
@@ -436,7 +441,7 @@
       parentlist = child.parentlist = node.parentlist;
     inx = parentlist.indexOf(node);
     parentlist.splice(inx, 0, child);
-    recursive(parent || parentlist, addPropWatchers);
+    recursive(parent || parentlist);
     emit("node:added", node);
   }
   function afterChildNode(node, child){
@@ -444,7 +449,7 @@
       parentlist = child.parentlist = node.parentlist;
     inx = parentlist.indexOf(node);
     parentlist.splice(inx + 1, 0, child);
-    recursive(parent || parentlist, addPropWatchers);
+    recursive(parent || parentlist);
     emit("node:added", node);
   }
   function updateNode(target, obj){
@@ -480,7 +485,6 @@
     "toVariable" : {
       exp : new RegExp("^\\[to:(.*)\\]$", "g"),
       watcher : function(d){
-        /** unit-test used only **/
         return ["_change", d, function (val){
           var filter = watchersMap[d];
           each(filter, function(n){
@@ -798,13 +802,17 @@
       each(properties, function(n, i){
         rs[n.name] = getValue(values[i])
       })
-      tools.some(function(t){return t.isDirty()}) ?
+      tools.some(function(t){
+        return t.isDirty()
+      }) ?
         events["submit"] && events["submit"](rs) :
-        events["close"] && events["close"](e)
+        events["close"] && events["close"](e);
+      destroy();
     }
     cover.onclick = function(e){
       if(e.eventPhase === 2){
         events["close"] && events["close"](e);
+        destroy();
       }
     }
     each(properties, function(property){
@@ -826,20 +834,22 @@
       table.appendChild(tr);
     })
     document.body.appendChild(fragement);
+    function destroy(){
+      each(tools, function(t){
+        t.destroy();
+      })
+      cover.remove();
+      titledom = null;
+      cover = null;
+      modal = null;
+      submit = null;
+    }
     return {
       on : function(eventname, callback){
         events[eventname] = callback;
+        return this;
       },
-      destroy : function(){
-        each(tools, function(t){
-          t.destroy();
-        })
-        cover.remove();
-        titledom = null;
-        cover = null;
-        modal = null;
-        submit = null;
-      }
+      destroy : destroy
     }
   };
   function getNextBlank(dom){
@@ -902,6 +912,10 @@
                 return hasClass(n, "blank");
               })
             })(e.target);
+          body.onmouseover = null
+          body.onmouseout = null;
+          body.onmouseup = null;
+          body.onmousemove = null;
           helper.remove();
           removeClass(parent, "hide");
           removeClass(helper, "fade-in");
@@ -946,10 +960,6 @@
           } else {
             insertBefore(origin, parent);
           }
-          body.onmouseover = null
-          body.onmouseout = null;
-          body.onmouseup = null;
-          body.onmousemove = null;
         }
       }
       function mouseover(e){
@@ -1496,7 +1506,7 @@
   var freeboard = {
     name : "free-board",
     template : "\
-      <div class=\"row freeboard edit\" v-freeboardcontainer>\
+      <div class=\"row freeboard edit\" v-bind:class=\"setting.theme\" v-freeboardcontainer>\
         <html-recursive \
           v-for=\"op in root.children\"\
           v-bind:option=\"op\"\>\
@@ -1522,12 +1532,17 @@
         if(root.children.length == 0) return _END;
         return "";
       },
+      setting : function(){
+        var attr = this.attr("options");
+        setting = this.parent().data(attr).setting || {};
+        return setting;
+      },
       root : function(){
         var attr = this.attr("options"),
-          options = this.parent().data(attr),
+          options = this.parent().data(attr).data || [],
           root = recursive({
             children : options
-          }, addPropWatchers);
+          });
         _options = options;
         return root;
       }
@@ -1536,7 +1551,7 @@
   var freeboardpreview = {
     name : "free-board-prev",
     template : "\
-      <div class=\"freeboard preview\">\
+      <div class=\"freeboard preview\" v-bind:class=\"setting.theme\">\
         <html-recursive-prev\
           v-for=\"op in root.children\"\
           v-bind:option=\"op\"\>\
@@ -1546,12 +1561,17 @@
       this.isComponentRoot = true;
     },
     computed : {
+      setting : function(){
+        var attr = this.attr("options");
+        setting = this.parent().data(attr).setting || {};
+        return setting;
+      },
       root : function(){
         var attr = this.attr("options"),
-          options = this.parent().data(attr),
+          options = this.parent().data(attr).data || [],
           root = recursive({
             children : options
-          }, addPropWatchers);
+          });
         return root;
       }
     }
@@ -1842,6 +1862,9 @@
     Vue.prototype.parent = function(){
       return this.$parent
     }
+    Vue.prototype.getTheme = function(){
+      return setting.theme;
+    }
     Vue.prototype.attr = function(str){
       return str ? this.$attrs[str] : undefined;
     }
@@ -1862,7 +1885,8 @@
       return isFunction(match) ? match(rootCompoent) : match;
     }
     Vue.prototype.setAttribute = function(name, value){
-      var rootCompoent = this.getRootComponent(),
+      var cur = this,
+        rootCompoent = this.getRootComponent(),
         item,
         option = this.getComponent(),
         map = vueEditor.toolsMap[option['type']],
@@ -1873,9 +1897,20 @@
         attr = option.properties[name],
         match = getWatcher( attr );
       if(isArray(match) && match[0] === "_change"){
-        item = match[2];
         rootCompoent[match[1]] = value;
-        item(value);
+        var fn = watchersMap[match[1]] || [];
+        each(fn, function(n, i){
+          n.call(cur, value);
+        })
+      }
+    }
+    Vue.prototype.listen = function(eventname, callback){
+      if(eventname.indexOf("change:Global:") != -1){
+        var val = eventname.split("change:Global:")[1];
+        watchersMap[val] = watchersMap[val] || [];
+        watchersMap[val].push(callback);
+      } else {
+        on(eventname, callback);
       }
     }
     Vue.prototype.getComponent = function(){
@@ -1917,15 +1952,57 @@
       }
     })
   }
+  vueEditor.setup = function(){
+    createProperties("全局设置", [{
+      type : "input",
+      title : "标题",
+      name : "title",
+      value : setting.title
+    },{
+      type : "select",
+      title : "主题选择",
+      name : "theme",
+      value : setting.theme,
+      options : [
+        ["normal", "默认"],
+        ["dark", "黑色"],
+        ["blue", "蓝色"]
+      ]
+    }]).on("submit", function(e){
+      var oldSetting = extend({}, setting), newSetting = e,
+      command = cmd.addCommand({
+        name : "append tool",
+        msg : "修改全局设置",
+      });
+      if(newSetting.theme !== oldSetting.theme){
+        emit("change:theme", newSetting.theme);
+      }
+      function changeSetting(s){
+        setting = extend(setting, s);
+      }
+      command.process({
+        forward : [changeSetting, newSetting],
+        backward : [changeSetting, oldSetting]
+      })
+      setting = extend(setting, newSetting);
+      command.end();
+    }).on("close", function(e){
+      console.log(e);
+    })
+  }
   vueEditor.save = function(){
-    alert("视图[view_" + viewId + ".json]保存完毕");
     cmd.init();
     emit("command:change", cmd.getAllCommand());
-    var params = JSON.stringify(plainClone(_options), null, 2),
+    var savedDate = {
+        setting : setting,
+        data : plainClone(_options)
+      },
+      params = JSON.stringify(savedDate, null, 2),
       url = urlparse(),
       viewId = url.param.id;
     postJSON("api/savelayout/" + viewId, params, function(event){
       if(event.code == 0){
+        alert("视图[view_" + viewId + ".json]保存完毕");
         console.log("event");
       }
     });

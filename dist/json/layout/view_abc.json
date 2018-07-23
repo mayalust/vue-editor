@@ -1,71 +1,86 @@
-[
-  {
-    "type": "row",
-    "properties": {
-      "theme": "normal"
-    },
-    "children": [
-      {
-        "type": "col",
-        "class": "col-xs-2",
-        "colnum": 2,
-        "children": []
+{
+  "setting": {
+    "title": "园区",
+    "theme": "blue"
+  },
+  "data": [
+    {
+      "type": "row",
+      "properties": {
+        "theme": "normal"
       },
-      {
-        "type": "col",
-        "class": "col-xs-8",
-        "colnum": 8,
-        "children": [
-          {
-            "type": "text",
-            "properties": {
-              "value": "地图文字信息",
-              "theme": "big"
-            }
-          },
-          {
-            "type": "row",
-            "properties": {
-              "theme": "normal"
-            },
-            "children": [
-              {
-                "type": "col",
-                "class": "col-xs-3",
-                "colnum": 3,
-                "children": [
-                  {
-                    "type": "selectlist",
-                    "properties": {
-                      "output": "[to:select]"
-                    }
-                  }
-                ]
-              },
-              {
-                "type": "col",
-                "class": "col-xs-9",
-                "colnum": 9,
-                "children": [
-                  {
-                    "type": "mapchart",
-                    "properties": {
-                      "title": "[from:select]",
-                      "height": "600"
-                    }
-                  }
-                ]
+      "children": [
+        {
+          "type": "col",
+          "class": "col-xs-2",
+          "colnum": 2,
+          "children": []
+        },
+        {
+          "type": "col",
+          "class": "col-xs-8",
+          "colnum": 8,
+          "children": [
+            {
+              "type": "text",
+              "properties": {
+                "value": "产业园区",
+                "theme": "big"
               }
-            ]
-          }
-        ]
-      },
-      {
-        "type": "col",
-        "class": "col-xs-2",
-        "colnum": 2,
-        "children": []
-      }
-    ]
-  }
-]
+            },
+            {
+              "type": "search",
+              "properties": {
+                "time": "2018",
+                "area": "bj",
+                "searchsort": "[]",
+                "quicksearch": "[]"
+              }
+            },
+            {
+              "type": "row",
+              "properties": {
+                "theme": "normal"
+              },
+              "children": [
+                {
+                  "type": "col",
+                  "class": "col-xs-3",
+                  "colnum": 3,
+                  "children": [
+                    {
+                      "type": "selectlist",
+                      "properties": {
+                        "output": "[to:select]"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "col",
+                  "class": "col-xs-9",
+                  "colnum": 9,
+                  "children": [
+                    {
+                      "type": "mapchart",
+                      "properties": {
+                        "title": "[from:select]",
+                        "height": "600"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "col",
+          "class": "col-xs-2",
+          "colnum": 2,
+          "children": []
+        }
+      ]
+    }
+  ]
+}

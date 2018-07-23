@@ -1,8 +1,10 @@
 <template>
-  <div v-mapchart:option="option" v-height:height="height" class="char-twrap"></div>
+  <div v-mapchart:option="option" v-height:height="height" class="char-twrap" v-bind:class="option.theme">
+  </div>
 </template>
 <script type="text/ecmascript">
-  var echartDir = require("./components/echart-directive.js");
+  var echartDir = require("./components/echart-directive.js"),
+    events;
   export default {
     title : "VUE地图组件",
     properties : [{
@@ -20,11 +22,39 @@
     computed : {
       height : function(){
         return this.getAttribute("height");
-      },
-      option : function(){
-        var cur = this,
-          val = this.getAttribute("title"),
-          data = [
+      }
+    },
+    data : function(){
+      var cur = this,
+        colors = {
+          normal : ['#a4eefe', '#31bcdc'],
+          dark : ['#555', '#777'],
+          blue : ['#a4eefe', '#31bcdc']
+        },
+        itemColors = {
+          normal : "#eb5715",
+          dark : "#ddb926",
+          blue : "#eb5715"
+        },
+        val = this.getAttribute("title"),
+        geoCoordMap = {
+          "北京": [116.46, 39.92],
+          "天津": [118.78, 32.04],
+          "河北": [126.57, 43.87],
+          "山西": [121.48, 31.22],
+          "内蒙古": [104.06, 30.67],
+          "辽宁": [126.63, 45.75],
+          "吉林": [123.38, 41.8],
+          "黑龙江": [114.31, 30.52],
+          "上海": [114.48, 38.03],
+          "江苏": [117.2, 39.13],
+          "浙江": [112.53, 37.87],
+          "安徽": [108.95, 34.27],
+          "福建": [108.33, 22.84],
+          "江西": [115.89, 28.68],
+          "山东": [117, 36.65],
+        },
+        data = [
           {name:"北京",value:177},
           {name:"天津",value:42},
           {name:"河北",value:102},
@@ -57,31 +87,60 @@
           {name:"广西",value:59},
           {name:"海南",value:14},
         ];
-        for(var i = 0; i < data.length; i++){
-          data[i].value = parseInt(Math.random() * 2000);
+      var convertData = function (data) {
+        var res = [];
+        for (var i = 0; i < data.length; i++) {
+          var geoCoord = geoCoordMap[data[i].name];
+          if (geoCoord) {
+            data[i].value = parseInt(Math.random() * 200);
+            res.push({
+              name: data[i].name,
+              value: geoCoord.concat(data[i].value)
+            });
+          }
         }
-        var option = {
+        return res;
+      };
+      function render(theme, title){
+        for(var i = 0; i < data.length; i++){
+          data[i].value = parseInt(Math.random() * 200);
+        }
+        return {
+          theme : theme,
           title : {
-            text : val,
+            text : "全国产业园区分布",
+            subtext : title,
             left : "center"
           },
           visualMap: {
             show: true,
             min: 0,
-            max: 2000,
+            max: 200,
             left: 'left',
             top: 'bottom',
             text: ['高', '低'], // 文本，默认为数值文本
             calculable: true,
             seriesIndex: [0],
             inRange: {
-              // color: ['#3B5077', '#031525'] // 蓝黑
-              // color: ['#ffc0cb', '#800080'] // 红紫
-              // color: ['#3C3B3F', '#605C3C'] // 黑绿
-              // color: ['#0f0c29', '#302b63', '#24243e'] // 黑紫黑
-              // color: ['#23074d', '#cc5333'] // 紫红
-              // color: ['#00467F', '#A5CC82'] // 蓝绿
-              color: ['#1488CC', '#2B32B2'] // 浅蓝
+              color: colors[theme] // 浅蓝
+            }
+          },
+          geo: {
+            map: 'china',
+            label: {
+              emphasis: {
+                show: false
+              }
+            },
+            roam: false,
+            itemStyle: {
+              normal: {
+                areaColor: 'rgba(48,56,69,0.8)',//地图默认的背景颜色
+                borderColor: '#a6c84c'//地图默认的边线颜色
+              },
+              emphasis: {
+                areaColor: '#a6c84c'//地图触发地区的背景颜色
+              }
             }
           },
           series: [
@@ -90,15 +149,47 @@
               type: 'map',
               mapType: 'china',
               data : data
+            },
+            {
+              name: '产量',
+              type: 'scatter',
+              coordinateSystem: 'geo',
+              data: convertData(data),
+              symbolSize: function (val) {
+                return val[2] / 10;
+              },
+              label: {
+                normal: {
+                  formatter: '{b}',
+                  position: 'right',
+                  show: false
+                },
+                emphasis: {
+                  show: true
+                }
+              },
+              itemStyle: {
+                normal: {
+                  opacity : 1,
+                  borderColor : "#fff",
+                  borderWidth : 1,
+                  shadowBlur: 10,
+                  shadowColor: '#fff',
+                  color: itemColors[theme]
+                }
+              }
             }
           ]
         }
-        console.log(option);
-        return option;
       }
-    },
-    data : function(){
+      cur.listen("change:theme", function(theme){
+        cur.option = render(theme, cur.getAttribute("title"));
+      })
+      cur.listen("change:Global:select", function(title){
+        cur.option = render(cur.getTheme(), title);
+      })
       return {
+        option: render(cur.getTheme()),
         rootComponent : this.getRootComponent()
       }
     }
@@ -106,6 +197,17 @@
 </script>
 <style scoped>
   .char-twrap{
+    border-radius : 10px;
     background-color : #eee;
+    margin : 0 10px;
+    border-top : 3px solid #ddd;
+  }
+  .freeboard.dark .char-twrap{
+    border-top : 3px solid #666;
+    background-color : rgba(250, 250, 250, .1);
+  }
+  .freeboard.blue .char-twrap{
+    border-top : 3px solid #33b7fc;
+    background-color : rgba(250, 250, 250, .7);
   }
 </style>

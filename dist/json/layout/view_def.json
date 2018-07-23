@@ -1,36 +1,51 @@
-[
-  {
-    "type": "row",
-    "properties": {
-      "theme": "normal"
-    },
-    "children": [
-      {
-        "type": "col",
-        "class": "col-xs-2",
-        "colnum": 2,
-        "children": []
+{
+  "setting": {
+    "title": "园区",
+    "theme": "blue"
+  },
+  "data": [
+    {
+      "type": "row",
+      "properties": {
+        "theme": "normal"
       },
-      {
-        "type": "col",
-        "class": "col-xs-8",
-        "colnum": 8,
-        "children": [
-          {
-            "type": "search",
-            "properties": {
-              "time": "2018",
-              "area": "bj"
+      "children": [
+        {
+          "type": "col",
+          "class": "col-xs-3",
+          "colnum": 3,
+          "children": []
+        },
+        {
+          "type": "col",
+          "class": "col-xs-6",
+          "colnum": 6,
+          "children": [
+            {
+              "type": "text",
+              "properties": {
+                "value": "企业",
+                "theme": "big"
+              }
+            },
+            {
+              "type": "search",
+              "properties": {
+                "time": "2018",
+                "area": "bj",
+                "searchsort": "[华为,小米,百度,腾讯]",
+                "quicksearch": "[华为,小米,百度,腾讯]"
+              }
             }
-          }
-        ]
-      },
-      {
-        "type": "col",
-        "class": "col-xs-2",
-        "colnum": 2,
-        "children": []
-      }
-    ]
-  }
-]
+          ]
+        },
+        {
+          "type": "col",
+          "class": "col-xs-3",
+          "colnum": 3,
+          "children": []
+        }
+      ]
+    }
+  ]
+}

@@ -14,9 +14,7 @@
       "default" : "normal",
       "options" : [
         ["normal", "普通"],
-        ["big", "加大"],
-        ["red", "红色"],
-        ["gray", "灰背景"],
+        ["big", "大标题"]
       ]
     }],
     computed : {
@@ -30,5 +28,22 @@
   }
 </script>
 <style scoped>
-
+  .big{
+    color : #666;
+    font-size : 30px;
+    font-weight : bold;
+    line-height : 90px;
+  }
+  .freeboard.dark .normal {
+    color : #eee;
+  }
+  .freeboard.dark .big {
+    color : #eee;
+  }
+  .freeboard.blue .big {
+    color : #fff;
+  }
+  .freeboard.blue .normal {
+    color : #fff;
+  }
 </style>

@@ -19,26 +19,26 @@
   <style>
     .topmenus{
       color : #fff;
-      background-color : #000;
+      background-color : #172b59;
     }
     .topmenus .menus{
       cursor : pointer;
       float : left;
       padding : 0 40px;
-      line-height : 90px;
+      line-height : 70px;
     }
     .topmenus .menus.active{
-      background-color : #444;
+      color : #1a86c0;
     }
     .topmenus .menus:hover{
-      background-color : #444;
+      color : #1a86c0
     }
   </style>
 </head>
 <body draggable = "false">
   <div id="app"></div>
   <script>
-    var menus = ["第一个栏目", "第2个栏目", "第3个栏目"], views = {}, cachedFile;
+    var menus = ['园区', '企业'], views = {}, cachedFile;
     Veditor.use(Components);
     Veditor.use(comps);
     Vue.use(Veditor);
@@ -50,6 +50,7 @@
         cur.postJSON("api/getlayout/" + viewId, null, function(event){
           if(event.code == 0){
             views[viewId] = event.data;
+            //menus.push(event.data.setting.title);
             callback(views[viewId]);
           }
         });
@@ -57,7 +58,7 @@
     }
     new Vue({
       template : "<div class=\"row\">\
-        <div>\
+        <div class=\"production\">\
           <div class=\"row topmenus\">\
             <div class=\"col-md-2\"></div>\
             <div class=\"col-md-8\">\
